@@ -82,45 +82,16 @@ export default function EventForm() {
         });
         navigate(`/events/${id}`);
       } else {
-        // Create event
+        // Create event using RPC function that handles membership + floorplan in one transaction
         const { data: event, error: eventError } = await supabase
-          .from('events')
-          .insert({
-            name: form.name,
-            location: form.location || null,
-            start_date: form.start_date || null,
-            end_date: form.end_date || null,
-          })
-          .select()
-          .single();
+          .rpc('create_event_with_defaults', {
+            _name: form.name,
+            _location: form.location || '',
+            _start_date: form.start_date || null,
+            _end_date: form.end_date || null,
+          });
 
         if (eventError || !event) throw eventError;
-
-        // Add user as admin member
-        const { error: memberError } = await supabase
-          .from('event_members')
-          .insert({
-            user_id: user.id,
-            event_id: event.id,
-            role: 'ADMIN',
-          });
-
-        if (memberError) throw memberError;
-
-        // Create default floorplan
-        const { error: floorplanError } = await supabase
-          .from('floorplans')
-          .insert({
-            event_id: event.id,
-            name: 'Hoofdplattegrond',
-            width: 1200,
-            height: 800,
-            grid_size: 20,
-          });
-
-        if (floorplanError) {
-          console.error('Floorplan creation error:', floorplanError);
-        }
 
         toast({
           title: 'Aangemaakt',
