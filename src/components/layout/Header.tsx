@@ -1,0 +1,90 @@
+import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { useAuth } from '@/lib/auth';
+import { Button } from '@/components/ui/button';
+import { LogOut, HelpCircle, Globe } from 'lucide-react';
+
+const mainTabs = [
+  { label: 'Dashboard', path: '/dashboard' },
+  { label: 'Evenementen', path: '/events' },
+  { label: 'Gebruikers', path: '/users' },
+  { label: 'Instellingen', path: '/settings' },
+  { label: 'CRM', path: '/crm' },
+];
+
+export function Header() {
+  const { user, signOut } = useAuth();
+  const location = useLocation();
+  const navigate = useNavigate();
+
+  const getGreeting = () => {
+    const hour = new Date().getHours();
+    if (hour < 12) return 'Goedemorgen';
+    if (hour < 18) return 'Goedemiddag';
+    return 'Goedenavond';
+  };
+
+  const handleSignOut = async () => {
+    await signOut();
+    navigate('/login');
+  };
+
+  const isActiveTab = (path: string) => {
+    if (path === '/dashboard') {
+      return location.pathname === '/dashboard';
+    }
+    return location.pathname.startsWith(path);
+  };
+
+  return (
+    <header className="bg-card border-b border-border sticky top-0 z-50">
+      {/* Top bar */}
+      <div className="flex items-center justify-between px-6 py-3 border-b border-border">
+        <Link to="/dashboard" className="flex items-center gap-2">
+          <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
+            <span className="text-primary-foreground font-bold text-sm">C</span>
+          </div>
+          <span className="font-semibold text-lg text-foreground">Completexpo</span>
+        </Link>
+
+        <div className="flex items-center gap-4">
+          <span className="text-sm text-muted-foreground">
+            {getGreeting()}, <span className="text-foreground font-medium">{user?.user_metadata?.name || user?.email?.split('@')[0]}</span>
+          </span>
+          
+          <div className="flex items-center gap-2 border-l border-border pl-4">
+            <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground">
+              <HelpCircle className="w-4 h-4 mr-1" />
+              Help
+            </Button>
+            <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground">
+              <Globe className="w-4 h-4 mr-1" />
+              NL
+            </Button>
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              onClick={handleSignOut}
+              className="text-muted-foreground hover:text-foreground"
+            >
+              <LogOut className="w-4 h-4 mr-1" />
+              Uitloggen
+            </Button>
+          </div>
+        </div>
+      </div>
+
+      {/* Tab navigation */}
+      <nav className="flex items-center gap-1 px-6">
+        {mainTabs.map((tab) => (
+          <Link
+            key={tab.path}
+            to={tab.path}
+            className={`nav-tab ${isActiveTab(tab.path) ? 'nav-tab-active' : ''}`}
+          >
+            {tab.label}
+          </Link>
+        ))}
+      </nav>
+    </header>
+  );
+}
