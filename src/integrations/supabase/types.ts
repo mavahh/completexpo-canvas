@@ -272,6 +272,29 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      create_event_with_defaults: {
+        Args: {
+          _end_date: string
+          _location: string
+          _name: string
+          _start_date: string
+        }
+        Returns: {
+          created_at: string
+          end_date: string | null
+          id: string
+          location: string | null
+          name: string
+          start_date: string | null
+          updated_at: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "events"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       is_event_member: {
         Args: { _event_id: string; _user_id: string }
         Returns: boolean
