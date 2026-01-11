@@ -1,44 +1,10 @@
 import { forwardRef, useCallback } from 'react';
 import { StandServiceIcons } from './StandServiceIcons';
 import { STAND_STATUS_CONFIG, StandStatus } from './StandLegend';
-
-interface Stand {
-  id: string;
-  floorplan_id: string;
-  event_id: string;
-  exhibitor_id: string | null;
-  label: string;
-  x: number;
-  y: number;
-  width: number;
-  height: number;
-  rotation: number;
-  color: string | null;
-  notes: string | null;
-  status: StandStatus;
-}
-
-interface ExhibitorServices {
-  exhibitor_id: string;
-  water_connections: number;
-  power_option: string;
-  light_points: number;
-  construction_booked: boolean;
-  carpet_included: boolean;
-  surface_type: string;
-}
-
-interface Floorplan {
-  id: string;
-  width: number;
-  height: number;
-  grid_size: number;
-  background_url: string | null;
-  background_opacity: number | null;
-}
+import type { Stand, FloorplanMinimal, ExhibitorServices } from '@/types';
 
 interface FloorplanCanvasProps {
-  floorplan: Floorplan | undefined;
+  floorplan: FloorplanMinimal | undefined;
   stands: Stand[];
   selectedStandIds: Set<string>;
   exhibitorServices: ExhibitorServices[];

@@ -7,6 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import type { ExhibitorLibraryEntry } from '@/types';
 import {
   Dialog,
   DialogContent,
@@ -51,19 +52,6 @@ import {
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { nl } from 'date-fns/locale';
-
-interface ExhibitorLibraryEntry {
-  id: string;
-  name: string;
-  contact_name: string | null;
-  email: string | null;
-  phone: string | null;
-  vat: string | null;
-  notes: string | null;
-  account_id: string | null;
-  created_at: string;
-  updated_at: string;
-}
 
 export default function ExhibitorLibrary() {
   const { toast } = useToast();

@@ -10,6 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
+import type { PortalToken, AppEventBasic as Event, ExhibitorContact as Exhibitor } from '@/types';
 import { 
   Loader2, 
   CheckCircle, 
@@ -23,29 +24,6 @@ import {
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { nl } from 'date-fns/locale';
-
-interface PortalToken {
-  id: string;
-  event_id: string;
-  exhibitor_id: string | null;
-  email: string | null;
-  enabled: boolean;
-}
-
-interface Event {
-  id: string;
-  name: string;
-  location: string | null;
-  start_date: string | null;
-  end_date: string | null;
-}
-
-interface Exhibitor {
-  id: string;
-  name: string;
-  contact_name: string | null;
-  email: string | null;
-}
 
 const POWER_OPTIONS = [
   { value: 'NONE', label: 'Geen stroom' },

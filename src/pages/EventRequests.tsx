@@ -5,6 +5,7 @@ import { usePermissions } from '@/hooks/usePermissions';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
+import type { StandRequest } from '@/types';
 import {
   Table,
   TableBody,
@@ -29,28 +30,6 @@ import {
 import { ArrowLeft, Loader2, Check, X, Eye, Building2 } from 'lucide-react';
 import { format } from 'date-fns';
 import { nl } from 'date-fns/locale';
-
-interface StandRequest {
-  id: string;
-  company_name: string;
-  contact_name: string;
-  email: string;
-  phone: string | null;
-  vat: string | null;
-  requested_stand_label: string | null;
-  requested_area: number | null;
-  requested_width: number | null;
-  requested_height: number | null;
-  water_connections: number;
-  power_option: string;
-  light_points: number;
-  construction_booked: boolean;
-  carpet_included: boolean;
-  surface_type: string;
-  notes: string | null;
-  status: 'NEW' | 'APPROVED' | 'REJECTED' | 'PROCESSED';
-  created_at: string;
-}
 
 const STATUS_LABELS = {
   NEW: { label: 'Nieuw', variant: 'default' },
