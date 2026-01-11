@@ -45,6 +45,7 @@ const navItems: NavItem[] = [
   { title: 'Floorplan', icon: Map, path: '/floorplan', requiresEvent: true },
   { title: 'Exhibitors', icon: Users, path: '/exhibitors', requiresEvent: true },
   { title: 'Exposanten Bibliotheek', icon: Library, path: '/exhibitor-library', requiresAccount: true },
+  { title: 'Templates', icon: FileText, path: '/templates', requiresAccount: true },
   { title: 'Settings', icon: Settings, path: '/settings', requiresEvent: true },
 ];
 
