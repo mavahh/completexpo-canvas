@@ -9,6 +9,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { ExhibitorServicesDialog } from '@/components/exhibitors/ExhibitorServicesDialog';
+import { ExhibitorInviteDialog } from '@/components/exhibitors/ExhibitorInviteDialog';
 import {
   Dialog,
   DialogContent,
@@ -38,7 +39,8 @@ import {
   Settings2,
   Zap,
   Droplets,
-  Lightbulb
+  Lightbulb,
+  Send
 } from 'lucide-react';
 import type { Database } from '@/integrations/supabase/types';
 
@@ -86,6 +88,7 @@ export default function Exhibitors() {
   const [saving, setSaving] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [servicesExhibitor, setServicesExhibitor] = useState<{ id: string; name: string } | null>(null);
+  const [inviteDialogOpen, setInviteDialogOpen] = useState(false);
   const [form, setForm] = useState({
     name: '',
     contact_name: '',
@@ -278,10 +281,16 @@ export default function Exhibitors() {
           <h1 className="text-2xl font-bold text-foreground">Exposanten</h1>
           <p className="text-muted-foreground">{exhibitors.length} exposanten</p>
         </div>
-        <Button onClick={() => { resetForm(); setDialogOpen(true); }}>
-          <Plus className="w-4 h-4 mr-2" />
-          Nieuwe exposant
-        </Button>
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={() => setInviteDialogOpen(true)}>
+            <Send className="w-4 h-4 mr-2" />
+            Uitnodigen
+          </Button>
+          <Button onClick={() => { resetForm(); setDialogOpen(true); }}>
+            <Plus className="w-4 h-4 mr-2" />
+            Nieuwe exposant
+          </Button>
+        </div>
       </div>
 
       <Card className="p-4 mb-6">
@@ -464,6 +473,17 @@ export default function Exhibitors() {
           }}
           exhibitorId={servicesExhibitor.id}
           exhibitorName={servicesExhibitor.name}
+        />
+      )}
+
+      {/* Invite Dialog */}
+      {eventId && (
+        <ExhibitorInviteDialog
+          open={inviteDialogOpen}
+          onOpenChange={setInviteDialogOpen}
+          eventId={eventId}
+          exhibitors={exhibitors.map((e) => ({ id: e.id, name: e.name, email: e.email }))}
+          onInviteSent={fetchExhibitors}
         />
       )}
 
