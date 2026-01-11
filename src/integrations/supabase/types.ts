@@ -777,6 +777,7 @@ export type Database = {
         }
         Returns: boolean
       }
+      is_account_admin: { Args: { _user_id: string }; Returns: boolean }
       is_event_member: {
         Args: { _event_id: string; _user_id: string }
         Returns: boolean
