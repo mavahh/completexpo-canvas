@@ -78,6 +78,10 @@ export default {
           "stand-selected": "hsl(var(--editor-stand-selected))",
           canvas: "hsl(var(--editor-canvas))",
         },
+        landing: {
+          dark: "hsl(var(--landing-dark))",
+          "dark-card": "hsl(var(--landing-dark-card))",
+        },
       },
       borderRadius: {
         lg: "var(--radius)",

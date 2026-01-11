@@ -6,8 +6,8 @@
 
 @layer base {
   :root {
-    /* Clean white/grey palette with orange accent */
-    --background: 0 0% 98%;
+    /* Clean white/grey palette with green accent */
+    --background: 0 0% 100%;
     --foreground: 220 13% 18%;
 
     --card: 0 0% 100%;
@@ -16,18 +16,18 @@
     --popover: 0 0% 100%;
     --popover-foreground: 220 13% 18%;
 
-    /* Orange primary - vibrant and professional */
-    --primary: 24 95% 53%;
+    /* Green primary - vibrant and professional */
+    --primary: 160 84% 39%;
     --primary-foreground: 0 0% 100%;
 
     /* Soft grey secondary */
-    --secondary: 220 13% 95%;
+    --secondary: 220 13% 97%;
     --secondary-foreground: 220 13% 35%;
 
     --muted: 220 13% 95%;
     --muted-foreground: 220 9% 46%;
 
-    --accent: 24 95% 53%;
+    --accent: 160 84% 39%;
     --accent-foreground: 0 0% 100%;
 
     --destructive: 0 84% 60%;
@@ -36,22 +36,22 @@
     /* Borders and inputs */
     --border: 220 13% 90%;
     --input: 220 13% 90%;
-    --ring: 24 95% 53%;
+    --ring: 160 84% 39%;
 
-    --radius: 0.5rem;
+    --radius: 0.75rem;
 
     /* Sidebar */
     --sidebar-background: 0 0% 100%;
     --sidebar-foreground: 220 13% 35%;
-    --sidebar-primary: 24 95% 53%;
+    --sidebar-primary: 160 84% 39%;
     --sidebar-primary-foreground: 0 0% 100%;
     --sidebar-accent: 220 13% 95%;
     --sidebar-accent-foreground: 220 13% 18%;
     --sidebar-border: 220 13% 90%;
-    --sidebar-ring: 24 95% 53%;
+    --sidebar-ring: 160 84% 39%;
 
     /* Custom design tokens */
-    --success: 142 76% 36%;
+    --success: 160 84% 39%;
     --success-foreground: 0 0% 100%;
     --warning: 38 92% 50%;
     --warning-foreground: 0 0% 100%;
@@ -61,8 +61,12 @@
     /* Floorplan editor */
     --editor-grid: 220 13% 92%;
     --editor-stand: 217 91% 60%;
-    --editor-stand-selected: 24 95% 53%;
+    --editor-stand-selected: 160 84% 39%;
     --editor-canvas: 0 0% 100%;
+
+    /* Landing page specific */
+    --landing-dark: 213 32% 12%;
+    --landing-dark-card: 213 32% 18%;
   }
 
   .dark {
@@ -75,7 +79,7 @@
     --popover: 220 13% 13%;
     --popover-foreground: 0 0% 95%;
 
-    --primary: 24 95% 53%;
+    --primary: 160 84% 45%;
     --primary-foreground: 0 0% 100%;
 
     --secondary: 220 13% 20%;
@@ -84,7 +88,7 @@
     --muted: 220 13% 20%;
     --muted-foreground: 220 9% 60%;
 
-    --accent: 24 95% 53%;
+    --accent: 160 84% 45%;
     --accent-foreground: 0 0% 100%;
 
     --destructive: 0 62% 45%;
@@ -92,21 +96,24 @@
 
     --border: 220 13% 25%;
     --input: 220 13% 25%;
-    --ring: 24 95% 53%;
+    --ring: 160 84% 45%;
 
     --sidebar-background: 220 13% 10%;
     --sidebar-foreground: 0 0% 90%;
-    --sidebar-primary: 24 95% 53%;
+    --sidebar-primary: 160 84% 45%;
     --sidebar-primary-foreground: 0 0% 100%;
     --sidebar-accent: 220 13% 18%;
     --sidebar-accent-foreground: 0 0% 95%;
     --sidebar-border: 220 13% 25%;
-    --sidebar-ring: 24 95% 53%;
+    --sidebar-ring: 160 84% 45%;
 
     --editor-grid: 220 13% 20%;
     --editor-stand: 217 91% 60%;
-    --editor-stand-selected: 24 95% 53%;
+    --editor-stand-selected: 160 84% 45%;
     --editor-canvas: 220 13% 13%;
+
+    --landing-dark: 213 32% 12%;
+    --landing-dark-card: 213 32% 18%;
   }
 }
 
