@@ -56,7 +56,7 @@ export default function Login() {
             description: 'Ongeldige inloggegevens',
           });
         } else {
-          navigate('/dashboard');
+          navigate('/home');
         }
       }
     } catch (err) {
