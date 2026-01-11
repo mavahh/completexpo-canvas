@@ -585,6 +585,7 @@ export type Database = {
           label: string
           notes: string | null
           rotation: number
+          status: string
           updated_at: string
           width: number
           x: number
@@ -601,6 +602,7 @@ export type Database = {
           label: string
           notes?: string | null
           rotation?: number
+          status?: string
           updated_at?: string
           width?: number
           x?: number
@@ -617,6 +619,7 @@ export type Database = {
           label?: string
           notes?: string | null
           rotation?: number
+          status?: string
           updated_at?: string
           width?: number
           x?: number
