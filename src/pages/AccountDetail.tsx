@@ -81,6 +81,15 @@ interface Event {
   location: string | null;
 }
 
+interface DemoRequest {
+  id: string;
+  company_name: string;
+  contact_name: string;
+  email: string;
+  phone: string | null;
+  created_at: string;
+}
+
 const STATUS_OPTIONS = [
   { value: 'pending', label: 'In afwachting' },
   { value: 'approved', label: 'Actief' },
@@ -98,7 +107,10 @@ export default function AccountDetail() {
   const [account, setAccount] = useState<Account | null>(null);
   const [users, setUsers] = useState<Profile[]>([]);
   const [events, setEvents] = useState<Event[]>([]);
+  const [demoRequest, setDemoRequest] = useState<DemoRequest | null>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [resetEmail, setResetEmail] = useState('');
+  const [sendingReset, setSendingReset] = useState(false);
 
   const [formData, setFormData] = useState({
     name: '',
@@ -144,6 +156,15 @@ export default function AccountDetail() {
         .order('start_date', { ascending: false });
 
       setEvents(eventsData || []);
+
+      // Fetch original demo request
+      const { data: demoData } = await supabase
+        .from('demo_requests')
+        .select('id, company_name, contact_name, email, phone, created_at')
+        .eq('created_account_id', accountId)
+        .single();
+
+      setDemoRequest(demoData as DemoRequest | null);
     } catch (error: any) {
       toast({
         variant: 'destructive',
@@ -366,6 +387,79 @@ export default function AccountDetail() {
                 Verwijderen
               </Button>
             </div>
+          </CardContent>
+        </Card>
+
+        {/* Password Reset */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <KeyRound className="w-5 h-5" />
+              Wachtwoord beheer
+            </CardTitle>
+            <CardDescription>Stuur een wachtwoord reset link naar een gebruiker</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {/* Original demo request info */}
+            {demoRequest && (
+              <div className="p-4 bg-muted rounded-lg space-y-3">
+                <p className="text-sm font-medium">Originele aanvrager:</p>
+                <div className="grid grid-cols-2 gap-4 text-sm">
+                  <div className="flex items-center gap-2">
+                    <User className="w-4 h-4 text-muted-foreground" />
+                    {demoRequest.contact_name}
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Mail className="w-4 h-4 text-muted-foreground" />
+                    {demoRequest.email}
+                  </div>
+                </div>
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  onClick={() => sendPasswordReset(demoRequest.email)}
+                  className="gap-2"
+                >
+                  <Send className="w-4 h-4" />
+                  Reset link sturen naar {demoRequest.email}
+                </Button>
+              </div>
+            )}
+
+            {/* Manual email input */}
+            <div className="flex gap-2">
+              <div className="flex-1">
+                <Label htmlFor="resetEmail" className="sr-only">E-mailadres</Label>
+                <Input
+                  id="resetEmail"
+                  type="email"
+                  placeholder="E-mailadres invoeren..."
+                  value={resetEmail}
+                  onChange={(e) => setResetEmail(e.target.value)}
+                />
+              </div>
+              <Button
+                onClick={async () => {
+                  if (!resetEmail) return;
+                  setSendingReset(true);
+                  await sendPasswordReset(resetEmail);
+                  setSendingReset(false);
+                  setResetEmail('');
+                }}
+                disabled={!resetEmail || sendingReset}
+                className="gap-2"
+              >
+                {sendingReset ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <Send className="w-4 h-4" />
+                )}
+                Versturen
+              </Button>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              De gebruiker ontvangt een e-mail met een link om een nieuw wachtwoord in te stellen.
+            </p>
           </CardContent>
         </Card>
 
