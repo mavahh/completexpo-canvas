@@ -106,22 +106,22 @@ export function WelcomeCard() {
 
   return (
     <Card className="bg-gradient-to-br from-primary/10 via-background to-background border-primary/20">
-      <CardContent className="p-6">
-        <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-6">
+      <CardContent className="p-4 sm:p-6">
+        <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4 sm:gap-6">
           {/* Welcome Section */}
           <div className="flex-1">
             {profileLoading ? (
               <div className="space-y-2">
-                <Skeleton className="h-8 w-48" />
-                <Skeleton className="h-4 w-64" />
+                <Skeleton className="h-7 sm:h-8 w-40 sm:w-48" />
+                <Skeleton className="h-4 w-56 sm:w-64" />
               </div>
             ) : (
               <>
-                <h2 className="text-2xl font-bold text-foreground">
+                <h2 className="text-xl sm:text-2xl font-bold text-foreground">
                   {getGreeting()}, {displayName}! 👋
                 </h2>
-                <p className="text-muted-foreground mt-1">
-                  Welkom terug bij je Command Center. Wat wil je vandaag doen?
+                <p className="text-sm sm:text-base text-muted-foreground mt-1">
+                  Welkom terug bij je Command Center.
                 </p>
               </>
             )}

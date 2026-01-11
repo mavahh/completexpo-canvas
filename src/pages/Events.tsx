@@ -79,13 +79,13 @@ export default function Events() {
 
   return (
     <div className="max-w-5xl mx-auto animate-fade-in">
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-foreground">Evenementen</h1>
-          <p className="text-muted-foreground">Beheer al je beurzen en exposities</p>
+          <h1 className="text-xl sm:text-2xl font-bold text-foreground">Evenementen</h1>
+          <p className="text-sm text-muted-foreground">Beheer al je beurzen en exposities</p>
         </div>
-        <Link to="/events/new">
-          <Button>
+        <Link to="/events/new" className="sm:flex-shrink-0">
+          <Button className="w-full sm:w-auto">
             <Plus className="w-4 h-4 mr-2" />
             Nieuw evenement
           </Button>
@@ -134,30 +134,32 @@ export default function Events() {
               className="p-4 hover:border-primary/30 transition-colors cursor-pointer"
               onClick={() => navigate(`/events/${event.id}`)}
             >
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center">
-                    <Calendar className="w-6 h-6 text-primary" />
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                <div className="flex items-center gap-3 sm:gap-4 min-w-0">
+                  <div className="w-10 h-10 sm:w-12 sm:h-12 bg-primary/10 rounded-lg flex items-center justify-center flex-shrink-0">
+                    <Calendar className="w-5 h-5 sm:w-6 sm:h-6 text-primary" />
                   </div>
-                  <div>
-                    <h3 className="font-medium text-foreground">{event.name}</h3>
-                    <div className="flex items-center gap-4 text-sm text-muted-foreground mt-1">
+                  <div className="min-w-0 flex-1">
+                    <h3 className="font-medium text-foreground truncate">{event.name}</h3>
+                    <div className="flex flex-wrap items-center gap-2 sm:gap-4 text-xs sm:text-sm text-muted-foreground mt-1">
                       {event.start_date && (
                         <span>
                           {format(new Date(event.start_date), 'd MMM yyyy', { locale: nl })}
-                          {event.end_date && ` - ${format(new Date(event.end_date), 'd MMM yyyy', { locale: nl })}`}
+                          {event.end_date && (
+                            <span className="hidden sm:inline"> - {format(new Date(event.end_date), 'd MMM yyyy', { locale: nl })}</span>
+                          )}
                         </span>
                       )}
                       {event.location && (
                         <span className="flex items-center gap-1">
                           <MapPin className="w-3 h-3" />
-                          {event.location}
+                          <span className="truncate max-w-[120px] sm:max-w-none">{event.location}</span>
                         </span>
                       )}
                     </div>
                   </div>
                 </div>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-1 sm:gap-2 self-end sm:self-center flex-shrink-0">
                   <Button
                     variant="ghost"
                     size="icon"

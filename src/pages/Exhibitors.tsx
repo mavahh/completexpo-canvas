@@ -255,19 +255,19 @@ export default function Exhibitors() {
         Terug naar evenement
       </Button>
 
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-foreground">Exposanten</h1>
-          <p className="text-muted-foreground">{exhibitors.length} exposanten</p>
+          <h1 className="text-xl sm:text-2xl font-bold text-foreground">Exposanten</h1>
+          <p className="text-sm text-muted-foreground">{exhibitors.length} exposanten</p>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline" onClick={() => setInviteDialogOpen(true)}>
-            <Send className="w-4 h-4 mr-2" />
-            Uitnodigen
+          <Button variant="outline" size="sm" className="flex-1 sm:flex-none" onClick={() => setInviteDialogOpen(true)}>
+            <Send className="w-4 h-4 sm:mr-2" />
+            <span className="hidden sm:inline">Uitnodigen</span>
           </Button>
-          <Button onClick={() => { resetForm(); setDialogOpen(true); }}>
-            <Plus className="w-4 h-4 mr-2" />
-            Nieuwe exposant
+          <Button size="sm" className="flex-1 sm:flex-none" onClick={() => { resetForm(); setDialogOpen(true); }}>
+            <Plus className="w-4 h-4 sm:mr-2" />
+            <span className="hidden sm:inline">Nieuwe exposant</span>
           </Button>
         </div>
       </div>
@@ -391,7 +391,7 @@ export default function Exhibitors() {
                 onChange={(e) => setForm({ ...form, contact_name: e.target.value })}
               />
             </div>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="email">E-mail</Label>
                 <Input
