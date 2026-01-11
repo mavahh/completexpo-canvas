@@ -145,7 +145,7 @@ export default function AcceptInvite() {
       // Handle based on invite type
       if (invite.type === 'DEMO_APPROVAL') {
         // Create account and make user owner
-        const companyName = invite.payload?.companyName || 'Mijn Organisatie';
+        const companyName = invite.payload?.company_name || invite.payload?.companyName || 'Mijn Organisatie';
         
         const { data: accountData, error: accountError } = await supabase
           .from('accounts')
