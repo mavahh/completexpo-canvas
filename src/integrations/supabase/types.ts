@@ -76,6 +76,56 @@ export type Database = {
         }
         Relationships: []
       }
+      exhibitor_services: {
+        Row: {
+          carpet_included: boolean
+          construction_booked: boolean
+          created_at: string
+          exhibitor_id: string
+          id: string
+          light_points: number
+          notes: string | null
+          power_option: Database["public"]["Enums"]["power_option"]
+          surface_type: Database["public"]["Enums"]["surface_type"]
+          updated_at: string
+          water_connections: number
+        }
+        Insert: {
+          carpet_included?: boolean
+          construction_booked?: boolean
+          created_at?: string
+          exhibitor_id: string
+          id?: string
+          light_points?: number
+          notes?: string | null
+          power_option?: Database["public"]["Enums"]["power_option"]
+          surface_type?: Database["public"]["Enums"]["surface_type"]
+          updated_at?: string
+          water_connections?: number
+        }
+        Update: {
+          carpet_included?: boolean
+          construction_booked?: boolean
+          created_at?: string
+          exhibitor_id?: string
+          id?: string
+          light_points?: number
+          notes?: string | null
+          power_option?: Database["public"]["Enums"]["power_option"]
+          surface_type?: Database["public"]["Enums"]["surface_type"]
+          updated_at?: string
+          water_connections?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "exhibitor_services_exhibitor_id_fkey"
+            columns: ["exhibitor_id"]
+            isOneToOne: true
+            referencedRelation: "exhibitors"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       exhibitors: {
         Row: {
           contact_name: string | null
@@ -125,6 +175,7 @@ export type Database = {
       }
       floorplans: {
         Row: {
+          background_opacity: number | null
           background_url: string | null
           created_at: string
           event_id: string
@@ -137,6 +188,7 @@ export type Database = {
           width: number
         }
         Insert: {
+          background_opacity?: number | null
           background_url?: string | null
           created_at?: string
           event_id: string
@@ -149,6 +201,7 @@ export type Database = {
           width?: number
         }
         Update: {
+          background_opacity?: number | null
           background_url?: string | null
           created_at?: string
           event_id?: string
@@ -302,6 +355,14 @@ export type Database = {
     }
     Enums: {
       event_role: "ADMIN" | "USER"
+      power_option:
+        | "NONE"
+        | "WATT_500"
+        | "WATT_2000"
+        | "WATT_3500"
+        | "AMP_16A"
+        | "AMP_32A"
+      surface_type: "EMPTY" | "EMPTY_WITH_CARPET" | "WITH_CONSTRUCTION"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -430,6 +491,15 @@ export const Constants = {
   public: {
     Enums: {
       event_role: ["ADMIN", "USER"],
+      power_option: [
+        "NONE",
+        "WATT_500",
+        "WATT_2000",
+        "WATT_3500",
+        "AMP_16A",
+        "AMP_32A",
+      ],
+      surface_type: ["EMPTY", "EMPTY_WITH_CARPET", "WITH_CONSTRUCTION"],
     },
   },
 } as const
