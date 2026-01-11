@@ -1,3 +1,12 @@
+import { useEffect, useState } from 'react';
+import { Card } from '@/components/ui/card';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { 
   AreaChart, 
   Area, 
@@ -7,38 +16,65 @@ import {
   Tooltip, 
   ResponsiveContainer 
 } from 'recharts';
-import { Card } from '@/components/ui/card';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
+import { supabase } from '@/integrations/supabase/client';
 
 interface BookingVelocityProps {
-  data?: Array<{
-    month: string;
-    bookings: number;
-  }>;
+  eventId?: string | null;
 }
 
-// Default demo data
-const defaultData = [
-  { month: 'Jan', bookings: 320 },
-  { month: 'Feb', bookings: 450 },
-  { month: 'Mar', bookings: 380 },
-  { month: 'Apr', bookings: 620 },
-  { month: 'May', bookings: 780 },
-  { month: 'Jun', bookings: 920 },
-];
+export function BookingVelocityChart({ eventId }: BookingVelocityProps) {
+  const [data, setData] = useState<Array<{ month: string; bookings: number }>>([]);
+  const [period, setPeriod] = useState('6months');
 
-export function BookingVelocityChart({ data = defaultData }: BookingVelocityProps) {
+  useEffect(() => {
+    fetchBookingData();
+  }, [eventId, period]);
+
+  const fetchBookingData = async () => {
+    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    const periodMonths = period === '30days' ? 1 : period === '3months' ? 3 : period === '1year' ? 12 : 6;
+    
+    const startDate = new Date();
+    startDate.setMonth(startDate.getMonth() - periodMonths);
+
+    let query = supabase
+      .from('stands')
+      .select('created_at')
+      .gte('created_at', startDate.toISOString());
+
+    if (eventId) {
+      query = query.eq('event_id', eventId);
+    }
+
+    const { data: standsData } = await query;
+
+    if (standsData) {
+      const monthlyData: Record<string, number> = {};
+      
+      for (let i = periodMonths - 1; i >= 0; i--) {
+        const d = new Date();
+        d.setMonth(d.getMonth() - i);
+        const key = months[d.getMonth()];
+        monthlyData[key] = 0;
+      }
+
+      standsData.forEach((stand) => {
+        const date = new Date(stand.created_at);
+        const key = months[date.getMonth()];
+        if (key in monthlyData) {
+          monthlyData[key]++;
+        }
+      });
+
+      setData(Object.entries(monthlyData).map(([month, bookings]) => ({ month, bookings })));
+    }
+  };
+
   return (
     <Card className="p-6">
       <div className="flex items-center justify-between mb-6">
         <h3 className="font-semibold text-foreground">Booking Velocity</h3>
-        <Select defaultValue="6months">
+        <Select value={period} onValueChange={setPeriod}>
           <SelectTrigger className="w-[140px]">
             <SelectValue placeholder="Select period" />
           </SelectTrigger>
@@ -63,23 +99,23 @@ export function BookingVelocityChart({ data = defaultData }: BookingVelocityProp
             <CartesianGrid 
               strokeDasharray="3 3" 
               vertical={false} 
-              stroke="hsl(220, 13%, 90%)"
+              stroke="hsl(var(--border))"
             />
             <XAxis 
               dataKey="month" 
               axisLine={false}
               tickLine={false}
-              tick={{ fill: 'hsl(220, 9%, 46%)', fontSize: 12 }}
+              tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 12 }}
             />
             <YAxis 
               axisLine={false}
               tickLine={false}
-              tick={{ fill: 'hsl(220, 9%, 46%)', fontSize: 12 }}
+              tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 12 }}
             />
             <Tooltip 
               contentStyle={{
-                backgroundColor: 'hsl(0, 0%, 100%)',
-                border: '1px solid hsl(220, 13%, 90%)',
+                backgroundColor: 'hsl(var(--card))',
+                border: '1px solid hsl(var(--border))',
                 borderRadius: '8px',
                 boxShadow: '0 4px 12px rgba(0,0,0,0.1)'
               }}

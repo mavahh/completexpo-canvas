@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/lib/auth';
+import { useCurrentEvent } from '@/hooks/useCurrentEvent';
 import { Button } from '@/components/ui/button';
 import { KPICard } from '@/components/dashboard/KPICard';
 import { EventCard } from '@/components/dashboard/EventCard';
@@ -26,6 +27,7 @@ interface StandStats {
 
 export default function Dashboard() {
   const { user } = useAuth();
+  const { eventId } = useCurrentEvent();
   const [events, setEvents] = useState<Event[]>([]);
   const [exhibitorCounts, setExhibitorCounts] = useState<Record<string, number>>({});
   const [totalExhibitors, setTotalExhibitors] = useState(0);
@@ -39,16 +41,23 @@ export default function Dashboard() {
 
   useEffect(() => {
     fetchData();
-  }, [user]);
+  }, [user, eventId]);
 
   const fetchData = async () => {
     if (!user) return;
+    setLoading(true);
 
-    // Fetch events
-    const { data: eventsData } = await supabase
+    // Fetch events (filtered if eventId is set)
+    let eventsQuery = supabase
       .from('events')
       .select('*')
       .order('created_at', { ascending: false });
+    
+    if (eventId) {
+      eventsQuery = eventsQuery.eq('id', eventId);
+    }
+    
+    const { data: eventsData } = await eventsQuery;
 
     if (eventsData) {
       setEvents(eventsData);
@@ -71,10 +80,14 @@ export default function Dashboard() {
       setTotalExhibitors(total);
     }
 
-    // Fetch stand statistics
-    const { data: standsData } = await supabase
-      .from('stands')
-      .select('status');
+    // Fetch stand statistics (filtered if eventId is set)
+    let standsQuery = supabase.from('stands').select('status, event_id');
+    
+    if (eventId) {
+      standsQuery = standsQuery.eq('event_id', eventId);
+    }
+    
+    const { data: standsData } = await standsQuery;
 
     if (standsData) {
       const stats: StandStats = {
@@ -144,14 +157,14 @@ export default function Dashboard() {
         <KPICard
           title="Total Exhibitors"
           value={totalExhibitors.toLocaleString()}
-          subtitle="Last 30 days"
+          subtitle={eventId ? "This event" : "All events"}
           icon={Users}
           trend={{ value: 12.5, isPositive: true }}
         />
         <KPICard
           title="Floor Space Sold"
           value={`${soldPercentage}%`}
-          subtitle={`${totalStands.toLocaleString()} m² total`}
+          subtitle={`${totalStands.toLocaleString()} stands total`}
           icon={LayoutGrid}
           trend={{ value: 4.2, isPositive: true }}
         />
@@ -174,59 +187,61 @@ export default function Dashboard() {
       {/* Charts Section */}
       <div className="grid lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2">
-          <BookingVelocityChart />
+          <BookingVelocityChart eventId={eventId} />
         </div>
         <StandDistributionChart data={standStats} />
       </div>
 
-      {/* Events Section */}
-      <div>
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-semibold text-foreground">Your Events</h2>
-          <Link to="/events/new">
-            <Button size="sm">
-              <Plus className="w-4 h-4 mr-1" />
-              New Event
-            </Button>
-          </Link>
-        </div>
-
-        {events.length === 0 ? (
-          <div className="text-center py-12 bg-card rounded-xl border border-border">
-            <p className="text-muted-foreground mb-4">No events yet</p>
+      {/* Events Section - only show when no specific event is selected */}
+      {!eventId && (
+        <div>
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-lg font-semibold text-foreground">Your Events</h2>
             <Link to="/events/new">
-              <Button>
-                <Plus className="w-4 h-4 mr-2" />
-                Create your first event
+              <Button size="sm">
+                <Plus className="w-4 h-4 mr-1" />
+                New Event
               </Button>
             </Link>
           </div>
-        ) : (
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {events.slice(0, 6).map((event, index) => (
-              <EventCard
-                key={event.id}
-                id={event.id}
-                name={event.name}
-                startDate={event.start_date}
-                endDate={event.end_date}
-                location={event.location}
-                exhibitorCount={exhibitorCounts[event.id] || 0}
-                status={getEventStatus(event)}
-                gradient={gradients[index % gradients.length]}
-              />
-            ))}
-          </div>
-        )}
 
-        {events.length > 6 && (
-          <div className="text-center mt-4">
-            <Link to="/events">
-              <Button variant="outline">View all events</Button>
-            </Link>
-          </div>
-        )}
-      </div>
+          {events.length === 0 ? (
+            <div className="text-center py-12 bg-card rounded-xl border border-border">
+              <p className="text-muted-foreground mb-4">No events yet</p>
+              <Link to="/events/new">
+                <Button>
+                  <Plus className="w-4 h-4 mr-2" />
+                  Create your first event
+                </Button>
+              </Link>
+            </div>
+          ) : (
+            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {events.slice(0, 6).map((event, index) => (
+                <EventCard
+                  key={event.id}
+                  id={event.id}
+                  name={event.name}
+                  startDate={event.start_date}
+                  endDate={event.end_date}
+                  location={event.location}
+                  exhibitorCount={exhibitorCounts[event.id] || 0}
+                  status={getEventStatus(event)}
+                  gradient={gradients[index % gradients.length]}
+                />
+              ))}
+            </div>
+          )}
+
+          {events.length > 6 && (
+            <div className="text-center mt-4">
+              <Link to="/events">
+                <Button variant="outline">View all events</Button>
+              </Link>
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }

@@ -4,31 +4,25 @@ import { Label } from '@/components/ui/label';
 
 export type StandStatus = 'AVAILABLE' | 'RESERVED' | 'SOLD' | 'BLOCKED';
 
-interface StatusConfig {
-  label: string;
-  color: string;
-  bgColor: string;
-}
-
-export const STAND_STATUS_CONFIG: Record<StandStatus, StatusConfig> = {
+export const STAND_STATUS_CONFIG: Record<StandStatus, { label: string; color: string; bgColor: string }> = {
   AVAILABLE: {
     label: 'Available',
-    color: 'hsl(199, 89%, 48%)',  // info blue
+    color: 'hsl(199, 89%, 48%)',
     bgColor: 'bg-info',
   },
   RESERVED: {
     label: 'Reserved',
-    color: 'hsl(38, 92%, 50%)',   // warning yellow/orange
+    color: 'hsl(38, 92%, 50%)',
     bgColor: 'bg-warning',
   },
   SOLD: {
     label: 'Sold',
-    color: 'hsl(142, 76%, 36%)',  // success green
+    color: 'hsl(142, 76%, 36%)',
     bgColor: 'bg-success',
   },
   BLOCKED: {
     label: 'Blocked',
-    color: 'hsl(220, 9%, 46%)',   // muted grey
+    color: 'hsl(220, 9%, 46%)',
     bgColor: 'bg-muted-foreground',
   },
 };

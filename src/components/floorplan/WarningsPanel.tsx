@@ -8,7 +8,6 @@ export interface FloorplanWarning {
   standId: string;
   standLabel: string;
   message: string;
-  relatedStandId?: string;
 }
 
 interface WarningsPanelProps {
