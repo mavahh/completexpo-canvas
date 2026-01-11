@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
   Dialog,
   DialogContent,
@@ -32,6 +33,7 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { useToast } from '@/hooks/use-toast';
+import { RolePermissionsCard } from '@/components/team/RolePermissionsCard';
 import { 
   Loader2, 
   UserPlus, 
@@ -43,7 +45,7 @@ import {
   Trash2,
   Copy,
   Check,
-  ExternalLink
+  Settings
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { nl } from 'date-fns/locale';
@@ -253,66 +255,80 @@ export default function Team() {
 
   return (
     <div className="max-w-4xl mx-auto animate-fade-in">
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
         <div>
           <h1 className="text-2xl font-bold text-foreground">Team</h1>
           <p className="text-muted-foreground">Beheer teamleden van {account.name}</p>
         </div>
         {canManageTeam && (
-          <Button onClick={() => setInviteDialogOpen(true)}>
+          <Button onClick={() => setInviteDialogOpen(true)} className="w-full sm:w-auto">
             <UserPlus className="w-4 h-4 mr-2" />
             Uitnodigen
           </Button>
         )}
       </div>
 
-      {/* Stats */}
-      <div className="grid grid-cols-3 gap-4 mb-6">
-        <Card>
-          <CardContent className="pt-6">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center">
-                <Users className="w-5 h-5 text-primary" />
-              </div>
-              <div>
-                <p className="text-2xl font-bold">{members.length}</p>
-                <p className="text-xs text-muted-foreground">Teamleden</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="pt-6">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-orange-100 dark:bg-orange-900/20 rounded-lg flex items-center justify-center">
-                <Mail className="w-5 h-5 text-orange-600" />
-              </div>
-              <div>
-                <p className="text-2xl font-bold">{pendingInvites.length}</p>
-                <p className="text-xs text-muted-foreground">Openstaande uitnodigingen</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="pt-6">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-blue-100 dark:bg-blue-900/20 rounded-lg flex items-center justify-center">
-                <Shield className="w-5 h-5 text-blue-600" />
-              </div>
-              <div>
-                <p className="text-2xl font-bold">
-                  {members.filter(m => m.role === 'ADMIN' || m.role === 'OWNER').length}
-                </p>
-                <p className="text-xs text-muted-foreground">Beheerders</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
+      <Tabs defaultValue="members" className="space-y-6">
+        <TabsList className="grid w-full grid-cols-2">
+          <TabsTrigger value="members" className="flex items-center gap-2">
+            <Users className="w-4 h-4" />
+            <span>Leden</span>
+          </TabsTrigger>
+          <TabsTrigger value="permissions" className="flex items-center gap-2">
+            <Settings className="w-4 h-4" />
+            <span>Rolrechten</span>
+          </TabsTrigger>
+        </TabsList>
 
-      {/* Team Members */}
-      <Card className="mb-6">
+        <TabsContent value="members" className="space-y-6">
+
+          {/* Stats */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <Card>
+              <CardContent className="pt-6">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center">
+                    <Users className="w-5 h-5 text-primary" />
+                  </div>
+                  <div>
+                    <p className="text-2xl font-bold">{members.length}</p>
+                    <p className="text-xs text-muted-foreground">Teamleden</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="pt-6">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-orange-100 dark:bg-orange-900/20 rounded-lg flex items-center justify-center">
+                    <Mail className="w-5 h-5 text-orange-600" />
+                  </div>
+                  <div>
+                    <p className="text-2xl font-bold">{pendingInvites.length}</p>
+                    <p className="text-xs text-muted-foreground">Openstaand</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="pt-6">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-blue-100 dark:bg-blue-900/20 rounded-lg flex items-center justify-center">
+                    <Shield className="w-5 h-5 text-blue-600" />
+                  </div>
+                  <div>
+                    <p className="text-2xl font-bold">
+                      {members.filter(m => m.role === 'ADMIN' || m.role === 'OWNER').length}
+                    </p>
+                    <p className="text-xs text-muted-foreground">Beheerders</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Team Members */}
+          <Card>
         <CardHeader>
           <CardTitle>Teamleden</CardTitle>
         </CardHeader>
@@ -325,23 +341,23 @@ export default function Team() {
             return (
               <div
                 key={member.id}
-                className="flex items-center justify-between p-3 border rounded-lg"
+                className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3 border rounded-lg"
               >
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center">
+                <div className="flex items-center gap-3 min-w-0">
+                  <div className="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center shrink-0">
                     <User className="w-5 h-5 text-primary" />
                   </div>
-                  <div>
-                    <p className="font-medium">
+                  <div className="min-w-0">
+                    <p className="font-medium truncate">
                       {member.profile?.name || member.profile?.email}
                       {isCurrentUser && (
                         <span className="text-xs text-muted-foreground ml-2">(jij)</span>
                       )}
                     </p>
-                    <p className="text-sm text-muted-foreground">{member.profile?.email}</p>
+                    <p className="text-sm text-muted-foreground truncate">{member.profile?.email}</p>
                   </div>
                 </div>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 ml-auto sm:ml-0">
                   <Badge className={roleInfo.color}>
                     <RoleIcon className="w-3 h-3 mr-1" />
                     {roleInfo.label}
@@ -360,63 +376,68 @@ export default function Team() {
             );
           })}
         </CardContent>
-      </Card>
+          </Card>
 
-      {/* Pending Invites */}
-      {pendingInvites.length > 0 && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Openstaande uitnodigingen</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            {pendingInvites.map((invite) => (
-              <div
-                key={invite.id}
-                className="flex items-center justify-between p-3 border rounded-lg bg-muted/50"
-              >
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-orange-100 dark:bg-orange-900/20 rounded-full flex items-center justify-center">
-                    <Mail className="w-5 h-5 text-orange-600" />
-                  </div>
-                  <div>
-                    <p className="font-medium">{invite.email}</p>
-                    <p className="text-xs text-muted-foreground">
-                      Uitgenodigd op {format(new Date(invite.created_at), 'd MMM yyyy', { locale: nl })}
-                      {' • '}
-                      Verloopt {format(new Date(invite.expires_at), 'd MMM yyyy', { locale: nl })}
-                    </p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Badge variant="secondary">
-                    {ROLE_LABELS[invite.payload?.accountRole || 'MEMBER']?.label}
-                  </Badge>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => copyInviteLink(invite.token)}
+          {/* Pending Invites */}
+          {pendingInvites.length > 0 && (
+            <Card>
+              <CardHeader>
+                <CardTitle>Openstaande uitnodigingen</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                {pendingInvites.map((invite) => (
+                  <div
+                    key={invite.id}
+                    className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3 border rounded-lg bg-muted/50"
                   >
-                    {copiedToken === invite.token ? (
-                      <Check className="w-4 h-4" />
-                    ) : (
-                      <Copy className="w-4 h-4" />
-                    )}
-                  </Button>
-                  {canManageTeam && (
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => cancelInvite(invite.id)}
-                    >
-                      <Trash2 className="w-4 h-4 text-destructive" />
-                    </Button>
-                  )}
-                </div>
-              </div>
-            ))}
-          </CardContent>
-        </Card>
-      )}
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 bg-orange-100 dark:bg-orange-900/20 rounded-full flex items-center justify-center shrink-0">
+                        <Mail className="w-5 h-5 text-orange-600" />
+                      </div>
+                      <div className="min-w-0">
+                        <p className="font-medium truncate">{invite.email}</p>
+                        <p className="text-xs text-muted-foreground">
+                          Uitgenodigd op {format(new Date(invite.created_at), 'd MMM yyyy', { locale: nl })}
+                          <span className="hidden sm:inline"> • Verloopt {format(new Date(invite.expires_at), 'd MMM yyyy', { locale: nl })}</span>
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2 ml-auto sm:ml-0">
+                      <Badge variant="secondary">
+                        {ROLE_LABELS[invite.payload?.accountRole || 'MEMBER']?.label}
+                      </Badge>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => copyInviteLink(invite.token)}
+                      >
+                        {copiedToken === invite.token ? (
+                          <Check className="w-4 h-4" />
+                        ) : (
+                          <Copy className="w-4 h-4" />
+                        )}
+                      </Button>
+                      {canManageTeam && (
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => cancelInvite(invite.id)}
+                        >
+                          <Trash2 className="w-4 h-4 text-destructive" />
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </CardContent>
+            </Card>
+          )}
+        </TabsContent>
+
+        <TabsContent value="permissions">
+          <RolePermissionsCard canManage={canManageTeam} />
+        </TabsContent>
+      </Tabs>
 
       {/* Invite Dialog */}
       <Dialog open={inviteDialogOpen} onOpenChange={setInviteDialogOpen}>
@@ -459,12 +480,12 @@ export default function Team() {
                 </SelectContent>
               </Select>
             </div>
-            <div className="flex gap-3 pt-2">
-              <Button type="submit" disabled={saving}>
+            <div className="flex flex-col sm:flex-row gap-3 pt-2">
+              <Button type="submit" disabled={saving} className="w-full sm:w-auto">
                 {saving && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
                 Uitnodiging versturen
               </Button>
-              <Button type="button" variant="outline" onClick={() => setInviteDialogOpen(false)}>
+              <Button type="button" variant="outline" onClick={() => setInviteDialogOpen(false)} className="w-full sm:w-auto">
                 Annuleren
               </Button>
             </div>
