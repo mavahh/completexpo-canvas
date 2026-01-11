@@ -138,7 +138,7 @@ export default function Login() {
             </Button>
           </form>
 
-          <div className="mt-6 text-center">
+          <div className="mt-6 text-center space-y-3">
             <button
               type="button"
               onClick={() => setIsSignUp(!isSignUp)}
@@ -146,6 +146,15 @@ export default function Login() {
             >
               {isSignUp ? 'Heb je al een account? Log in' : 'Nog geen account? Registreer'}
             </button>
+            
+            <div className="pt-3 border-t border-border">
+              <p className="text-sm text-muted-foreground mb-2">Nieuw bij Completexpo?</p>
+              <Link to="/demo-request">
+                <Button variant="outline" className="w-full">
+                  Demo aanvragen
+                </Button>
+              </Link>
+            </div>
           </div>
 
           <div className="mt-6 pt-6 border-t border-border">
