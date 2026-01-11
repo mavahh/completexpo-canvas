@@ -14,6 +14,41 @@ export type Database = {
   }
   public: {
     Tables: {
+      account_members: {
+        Row: {
+          account_id: string
+          created_at: string
+          id: string
+          role: Database["public"]["Enums"]["account_role"]
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          account_id: string
+          created_at?: string
+          id?: string
+          role?: Database["public"]["Enums"]["account_role"]
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          account_id?: string
+          created_at?: string
+          id?: string
+          role?: Database["public"]["Enums"]["account_role"]
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "account_members_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "accounts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       accounts: {
         Row: {
           approved_at: string | null
@@ -150,6 +185,36 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      email_outbox: {
+        Row: {
+          body_text: string
+          created_at: string
+          id: string
+          meta: Json | null
+          sent_at: string | null
+          subject: string
+          to_email: string
+        }
+        Insert: {
+          body_text: string
+          created_at?: string
+          id?: string
+          meta?: Json | null
+          sent_at?: string | null
+          subject: string
+          to_email: string
+        }
+        Update: {
+          body_text?: string
+          created_at?: string
+          id?: string
+          meta?: Json | null
+          sent_at?: string | null
+          subject?: string
+          to_email?: string
+        }
+        Relationships: []
       }
       event_documents: {
         Row: {
@@ -333,6 +398,54 @@ export type Database = {
             columns: ["account_id"]
             isOneToOne: false
             referencedRelation: "accounts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      exhibitor_portal_tokens: {
+        Row: {
+          created_at: string
+          email: string | null
+          enabled: boolean
+          event_id: string
+          exhibitor_id: string | null
+          id: string
+          token: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          email?: string | null
+          enabled?: boolean
+          event_id: string
+          exhibitor_id?: string | null
+          id?: string
+          token?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          email?: string | null
+          enabled?: boolean
+          event_id?: string
+          exhibitor_id?: string | null
+          id?: string
+          token?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "exhibitor_portal_tokens_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "exhibitor_portal_tokens_exhibitor_id_fkey"
+            columns: ["exhibitor_id"]
+            isOneToOne: false
+            referencedRelation: "exhibitors"
             referencedColumns: ["id"]
           },
         ]
@@ -533,6 +646,63 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "floorplans_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      invites: {
+        Row: {
+          accepted_at: string | null
+          account_id: string | null
+          created_at: string
+          email: string
+          event_id: string | null
+          expires_at: string
+          id: string
+          invited_by_user_id: string | null
+          payload: Json | null
+          token: string
+          type: Database["public"]["Enums"]["invite_type"]
+        }
+        Insert: {
+          accepted_at?: string | null
+          account_id?: string | null
+          created_at?: string
+          email: string
+          event_id?: string | null
+          expires_at?: string
+          id?: string
+          invited_by_user_id?: string | null
+          payload?: Json | null
+          token?: string
+          type: Database["public"]["Enums"]["invite_type"]
+        }
+        Update: {
+          accepted_at?: string | null
+          account_id?: string | null
+          created_at?: string
+          email?: string
+          event_id?: string | null
+          expires_at?: string
+          id?: string
+          invited_by_user_id?: string | null
+          payload?: Json | null
+          token?: string
+          type?: Database["public"]["Enums"]["invite_type"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "invites_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "invites_event_id_fkey"
             columns: ["event_id"]
             isOneToOne: false
             referencedRelation: "events"
@@ -915,6 +1085,10 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      get_account_role: {
+        Args: { _account_id: string; _user_id: string }
+        Returns: Database["public"]["Enums"]["account_role"]
+      }
       get_user_account_id: { Args: { _user_id: string }; Returns: string }
       has_event_permission: {
         Args: { _event_id: string; _permission_name: string; _user_id: string }
@@ -932,6 +1106,7 @@ export type Database = {
         Returns: boolean
       }
       is_account_admin: { Args: { _user_id: string }; Returns: boolean }
+      is_account_owner: { Args: { _user_id: string }; Returns: boolean }
       is_event_member: {
         Args: { _event_id: string; _user_id: string }
         Returns: boolean
@@ -948,9 +1123,15 @@ export type Database = {
       }
     }
     Enums: {
+      account_role: "OWNER" | "ADMIN" | "MEMBER"
       document_language: "NL" | "FR" | "EN" | "DE"
       document_type: "TERMS"
       event_role: "ADMIN" | "USER"
+      invite_type:
+        | "DEMO_APPROVAL"
+        | "ACCOUNT_INVITE"
+        | "EVENT_INVITE"
+        | "EXHIBITOR_INVITE"
       power_option:
         | "NONE"
         | "WATT_500"
@@ -1088,9 +1269,16 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      account_role: ["OWNER", "ADMIN", "MEMBER"],
       document_language: ["NL", "FR", "EN", "DE"],
       document_type: ["TERMS"],
       event_role: ["ADMIN", "USER"],
+      invite_type: [
+        "DEMO_APPROVAL",
+        "ACCOUNT_INVITE",
+        "EVENT_INVITE",
+        "EXHIBITOR_INVITE",
+      ],
       power_option: [
         "NONE",
         "WATT_500",
