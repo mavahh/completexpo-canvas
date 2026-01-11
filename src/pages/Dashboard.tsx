@@ -8,22 +8,8 @@ import { KPICard } from '@/components/dashboard/KPICard';
 import { EventCard } from '@/components/dashboard/EventCard';
 import { BookingVelocityChart } from '@/components/dashboard/BookingVelocityChart';
 import { StandDistributionChart } from '@/components/dashboard/StandDistributionChart';
+import type { AppEventBasic as Event, StandStats } from '@/types';
 import { Plus, Users, LayoutGrid, Euro, ShoppingCart } from 'lucide-react';
-
-interface Event {
-  id: string;
-  name: string;
-  start_date: string | null;
-  end_date: string | null;
-  location: string | null;
-}
-
-interface StandStats {
-  available: number;
-  reserved: number;
-  sold: number;
-  blocked: number;
-}
 
 export default function Dashboard() {
   const { user } = useAuth();

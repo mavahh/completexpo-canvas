@@ -23,6 +23,7 @@ import { WarningsPanelEnhanced, FloorplanWarning } from '@/components/floorplan/
 import { AuditLogPanelEnhanced } from '@/components/floorplan/AuditLogPanelEnhanced';
 import { ExportDialogEnhanced, ExportOptionsEnhanced } from '@/components/floorplan/ExportDialogEnhanced';
 import { SaveAsTemplateDialog } from '@/components/floorplan/SaveAsTemplateDialog';
+import type { Stand, Floorplan, ExhibitorMinimal as Exhibitor, ExhibitorServices } from '@/types';
 import {
   Select,
   SelectContent,
@@ -37,49 +38,6 @@ import {
   Layout
 } from 'lucide-react';
 import { jsPDF } from 'jspdf';
-
-interface Stand {
-  id: string;
-  floorplan_id: string;
-  event_id: string;
-  exhibitor_id: string | null;
-  label: string;
-  x: number;
-  y: number;
-  width: number;
-  height: number;
-  rotation: number;
-  color: string | null;
-  notes: string | null;
-  status: StandStatus;
-}
-
-interface Exhibitor {
-  id: string;
-  name: string;
-}
-
-interface ExhibitorServices {
-  exhibitor_id: string;
-  water_connections: number;
-  power_option: string;
-  light_points: number;
-  construction_booked: boolean;
-  carpet_included: boolean;
-  surface_type: string;
-}
-
-interface Floorplan {
-  id: string;
-  event_id: string;
-  name: string;
-  hall: string | null;
-  width: number;
-  height: number;
-  grid_size: number;
-  background_url: string | null;
-  background_opacity: number | null;
-}
 
 export default function FloorplanEditor() {
   const { id: eventId } = useParams();

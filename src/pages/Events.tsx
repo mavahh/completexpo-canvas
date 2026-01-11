@@ -9,6 +9,7 @@ import { Plus, Calendar, MapPin, Search, Trash2, Edit2 } from 'lucide-react';
 import { format } from 'date-fns';
 import { nl } from 'date-fns/locale';
 import { useToast } from '@/hooks/use-toast';
+import type { AppEvent as Event } from '@/types';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -19,15 +20,6 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-
-interface Event {
-  id: string;
-  name: string;
-  start_date: string | null;
-  end_date: string | null;
-  location: string | null;
-  created_at: string;
-}
 
 export default function Events() {
   const { user } = useAuth();

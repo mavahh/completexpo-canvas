@@ -10,6 +10,7 @@ import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { ExhibitorServicesDialog } from '@/components/exhibitors/ExhibitorServicesDialog';
 import { ExhibitorInviteDialog } from '@/components/exhibitors/ExhibitorInviteDialog';
+import type { ExhibitorWithServices as Exhibitor, PowerOption } from '@/types';
 import {
   Dialog,
   DialogContent,
@@ -42,28 +43,6 @@ import {
   Lightbulb,
   Send
 } from 'lucide-react';
-import type { Database } from '@/integrations/supabase/types';
-
-type PowerOption = Database['public']['Enums']['power_option'];
-
-interface ExhibitorServicesData {
-  water_connections: number;
-  power_option: PowerOption;
-  light_points: number;
-  construction_booked: boolean;
-  carpet_included: boolean;
-}
-
-interface Exhibitor {
-  id: string;
-  name: string;
-  contact_name: string | null;
-  email: string | null;
-  phone: string | null;
-  vat: string | null;
-  notes: string | null;
-  exhibitor_services: ExhibitorServicesData | null;
-}
 
 const powerLabels: Record<PowerOption, string> = {
   NONE: '',
