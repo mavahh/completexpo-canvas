@@ -22,6 +22,7 @@ import Users from "./pages/Users";
 import UserDetail from "./pages/UserDetail";
 import Roles from "./pages/Roles";
 import Accounts from "./pages/Accounts";
+import AccountDetail from "./pages/AccountDetail";
 import DemoRequests from "./pages/DemoRequests";
 import EventSettings from "./pages/EventSettings";
 import EventUsers from "./pages/EventUsers";
@@ -78,6 +79,7 @@ const App = () => (
               
               {/* Super admin routes */}
               <Route path="/admin/accounts" element={<Accounts />} />
+              <Route path="/admin/accounts/:accountId" element={<AccountDetail />} />
               <Route path="/admin/demo-requests" element={<DemoRequests />} />
             </Route>
 
