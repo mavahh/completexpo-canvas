@@ -6,34 +6,30 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, CheckCircle, XCircle, Clock, Building2, Mail, Phone, User, Copy, Link2 } from 'lucide-react';
+import { Loader2, CheckCircle, XCircle, Clock, Building2, Mail, Phone, User, Send } from 'lucide-react';
 import { format } from 'date-fns';
 import { nl } from 'date-fns/locale';
 
 export default function DemoRequests() {
   const { toast } = useToast();
   const { isSuperAdmin, loading: authLoading } = useMultiTenant();
-  const { loading, requests, approveRequest, rejectRequest, refetch } = useDemoRequests();
+  const { loading, requests, rejectRequest, refetch } = useDemoRequests();
   const [processingId, setProcessingId] = useState<string | null>(null);
-  const [inviteLink, setInviteLink] = useState<string | null>(null);
 
   const handleApprove = async (request: any) => {
     setProcessingId(request.id);
     
     try {
-      // First approve and create account
-      const result = await approveRequest(request.id, request.company_name, request.user_id);
+      // Get current user for processed_by
+      const { data: { user } } = await supabase.auth.getUser();
       
-      if (!result.success) {
-        throw new Error(result.error);
-      }
-
-      // Create invite for the requester
+      // Create invite token
       const token = crypto.randomUUID();
       const expiresAt = new Date();
       expiresAt.setDate(expiresAt.getDate() + 7);
 
-      const { data: inviteData, error: inviteError } = await supabase
+      // Create invite record
+      const { error: inviteError } = await supabase
         .from('invites')
         .insert({
           type: 'DEMO_APPROVAL',
@@ -45,31 +41,64 @@ export default function DemoRequests() {
             contact_name: request.contact_name,
             demo_request_id: request.id,
           },
+        });
+
+      if (inviteError) throw inviteError;
+
+      // Update demo request status
+      const { error: updateError } = await supabase
+        .from('demo_requests')
+        .update({
+          status: 'approved',
+          processed_at: new Date().toISOString(),
+          processed_by: user?.id,
         })
-        .select()
-        .single();
+        .eq('id', request.id);
 
-      if (inviteError) {
-        console.error('Invite creation error:', inviteError);
-        // Continue - account was created successfully
-      }
+      if (updateError) throw updateError;
 
-      // Create email outbox entry
-      const link = `${window.location.origin}/invite/${token}`;
-      
+      // Generate invite link
+      const inviteLink = `${window.location.origin}/invite/${token}`;
+
+      // Try to send email via edge function
+      const { data: emailResult, error: emailError } = await supabase.functions.invoke(
+        'send-demo-approval-email',
+        {
+          body: {
+            to_email: request.email,
+            contact_name: request.contact_name,
+            company_name: request.company_name,
+            invite_link: inviteLink,
+          },
+        }
+      );
+
+      // Also store in email_outbox for records
       await supabase.from('email_outbox').insert({
         to_email: request.email,
-        subject: `Welkom bij ComplexExpo - Activeer je account`,
-        body_text: `Beste ${request.contact_name},\n\nJe demo aanvraag voor "${request.company_name}" is goedgekeurd!\n\nKlik op de onderstaande link om je account te activeren:\n${link}\n\nDeze link is 7 dagen geldig.\n\nMet vriendelijke groet,\nHet ComplexExpo Team`,
-        meta: { invite_link: link, invite_id: inviteData?.id },
+        subject: 'Je Completexpo account is goedgekeurd!',
+        body_text: `Beste ${request.contact_name},\n\nJe demo aanvraag voor "${request.company_name}" is goedgekeurd!\n\nActiveer je account via: ${inviteLink}\n\nDeze link is 7 dagen geldig.\n\nMet vriendelijke groet,\nHet Completexpo Team`,
+        meta: { 
+          invite_link: inviteLink, 
+          email_sent: !emailError && emailResult?.success,
+          demo_request_id: request.id,
+        },
       });
 
-      setInviteLink(link);
-      
-      toast({
-        title: 'Goedgekeurd',
-        description: `Account "${request.company_name}" is aangemaakt. Kopieer de invite link.`,
-      });
+      // Show appropriate message
+      if (emailError || !emailResult?.success) {
+        const errorMsg = emailResult?.message || 'Email kon niet verzonden worden.';
+        toast({
+          title: 'Goedgekeurd (zonder email)',
+          description: errorMsg,
+          variant: 'default',
+        });
+      } else {
+        toast({
+          title: 'Goedgekeurd & email verzonden',
+          description: `Activatie email is verstuurd naar ${request.email}`,
+        });
+      }
 
       refetch();
     } catch (error: any) {
@@ -102,11 +131,6 @@ export default function DemoRequests() {
     }
   };
 
-  const copyLink = async (link: string) => {
-    await navigator.clipboard.writeText(link);
-    toast({ title: 'Gekopieerd', description: 'Link is gekopieerd naar klembord' });
-  };
-
   if (authLoading || loading) {
     return (
       <div className="flex items-center justify-center py-12">
@@ -132,32 +156,6 @@ export default function DemoRequests() {
         <h1 className="text-2xl font-bold text-foreground">Demo aanvragen</h1>
         <p className="text-muted-foreground">Beheer inkomende demo aanvragen</p>
       </div>
-
-      {/* Invite Link Modal */}
-      {inviteLink && (
-        <Card className="mb-6 border-primary">
-          <CardContent className="py-4">
-            <div className="flex items-center justify-between gap-4">
-              <div className="flex items-center gap-3">
-                <Link2 className="w-5 h-5 text-primary" />
-                <div>
-                  <p className="font-medium text-foreground">Invite link aangemaakt</p>
-                  <p className="text-sm text-muted-foreground truncate max-w-md">{inviteLink}</p>
-                </div>
-              </div>
-              <div className="flex gap-2">
-                <Button size="sm" onClick={() => copyLink(inviteLink)} className="gap-2">
-                  <Copy className="w-4 h-4" />
-                  Kopiëren
-                </Button>
-                <Button size="sm" variant="outline" onClick={() => setInviteLink(null)}>
-                  Sluiten
-                </Button>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      )}
 
       {/* Pending requests */}
       <div className="mb-8">
@@ -226,9 +224,12 @@ export default function DemoRequests() {
                       {processingId === request.id ? (
                         <Loader2 className="w-4 h-4 animate-spin" />
                       ) : (
-                        <CheckCircle className="w-4 h-4" />
+                        <>
+                          <CheckCircle className="w-4 h-4" />
+                          <Send className="w-4 h-4" />
+                        </>
                       )}
-                      Goedkeuren
+                      Goedkeuren & email versturen
                     </Button>
                     <Button
                       variant="outline"
