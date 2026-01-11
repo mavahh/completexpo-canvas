@@ -8,7 +8,7 @@ import {
   LogOut,
   Building2,
   FileText,
-  ChevronRight
+  Library,
 } from 'lucide-react';
 import { useAuth } from '@/lib/auth';
 import { usePermissions, GlobalModuleVisibility } from '@/hooks/usePermissions';
@@ -36,6 +36,7 @@ interface NavItem {
   adminOnly?: boolean;
   superAdminOnly?: boolean;
   requiresEvent?: boolean;
+  requiresAccount?: boolean;
 }
 
 const navItems: NavItem[] = [
@@ -43,6 +44,7 @@ const navItems: NavItem[] = [
   { title: 'Events', icon: Calendar, path: '/events', module: 'EVENTS' },
   { title: 'Floorplan', icon: Map, path: '/floorplan', requiresEvent: true },
   { title: 'Exhibitors', icon: Users, path: '/exhibitors', requiresEvent: true },
+  { title: 'Exposanten Bibliotheek', icon: Library, path: '/exhibitor-library', requiresAccount: true },
   { title: 'Settings', icon: Settings, path: '/settings', requiresEvent: true },
 ];
 
@@ -57,7 +59,7 @@ export function AppSidebar() {
   const navigate = useNavigate();
   const { signOut } = useAuth();
   const { hasPermission, isModuleVisible, isSystemAdmin } = usePermissions();
-  const { isSuperAdmin } = useMultiTenant();
+  const { isSuperAdmin, account } = useMultiTenant();
   const { eventId } = useCurrentEvent();
 
   const handleSignOut = async () => {
@@ -94,6 +96,7 @@ export function AppSidebar() {
     if (item.module && !isModuleVisible(item.module)) return false;
     if (item.permission && !hasPermission(item.permission)) return false;
     if (item.requiresEvent && !eventId) return false;
+    if (item.requiresAccount && !account) return false;
     return true;
   };
 

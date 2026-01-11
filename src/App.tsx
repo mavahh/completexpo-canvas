@@ -16,6 +16,7 @@ import Events from "./pages/Events";
 import EventForm from "./pages/EventForm";
 import EventDetail from "./pages/EventDetail";
 import Exhibitors from "./pages/Exhibitors";
+import ExhibitorLibrary from "./pages/ExhibitorLibrary";
 import FloorplanEditor from "./pages/FloorplanEditor";
 import Users from "./pages/Users";
 import UserDetail from "./pages/UserDetail";
@@ -71,6 +72,7 @@ const App = () => (
               <Route path="/users" element={<Users />} />
               <Route path="/users/:userId" element={<UserDetail />} />
               <Route path="/roles" element={<Roles />} />
+              <Route path="/exhibitor-library" element={<ExhibitorLibrary />} />
               <Route path="/settings" element={<PlaceholderPage title="Instellingen" />} />
               <Route path="/crm" element={<PlaceholderPage title="CRM" />} />
               
