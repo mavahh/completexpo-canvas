@@ -44,6 +44,57 @@ export type Database = {
         }
         Relationships: []
       }
+      audit_logs: {
+        Row: {
+          action: string
+          created_at: string
+          diff: Json | null
+          entity_id: string | null
+          entity_type: string
+          event_id: string | null
+          floorplan_id: string | null
+          id: string
+          user_id: string | null
+        }
+        Insert: {
+          action: string
+          created_at?: string
+          diff?: Json | null
+          entity_id?: string | null
+          entity_type: string
+          event_id?: string | null
+          floorplan_id?: string | null
+          id?: string
+          user_id?: string | null
+        }
+        Update: {
+          action?: string
+          created_at?: string
+          diff?: Json | null
+          entity_id?: string | null
+          entity_type?: string
+          event_id?: string | null
+          floorplan_id?: string | null
+          id?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "audit_logs_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "audit_logs_floorplan_id_fkey"
+            columns: ["floorplan_id"]
+            isOneToOne: false
+            referencedRelation: "floorplans"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       demo_requests: {
         Row: {
           company_name: string
@@ -239,6 +290,53 @@ export type Database = {
           },
         ]
       }
+      exhibitor_library: {
+        Row: {
+          account_id: string | null
+          contact_name: string | null
+          created_at: string
+          email: string | null
+          id: string
+          name: string
+          notes: string | null
+          phone: string | null
+          updated_at: string
+          vat: string | null
+        }
+        Insert: {
+          account_id?: string | null
+          contact_name?: string | null
+          created_at?: string
+          email?: string | null
+          id?: string
+          name: string
+          notes?: string | null
+          phone?: string | null
+          updated_at?: string
+          vat?: string | null
+        }
+        Update: {
+          account_id?: string | null
+          contact_name?: string | null
+          created_at?: string
+          email?: string | null
+          id?: string
+          name?: string
+          notes?: string | null
+          phone?: string | null
+          updated_at?: string
+          vat?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "exhibitor_library_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "accounts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       exhibitor_services: {
         Row: {
           carpet_included: boolean
@@ -332,6 +430,62 @@ export type Database = {
             columns: ["event_id"]
             isOneToOne: false
             referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      floorplan_templates: {
+        Row: {
+          account_id: string | null
+          background_opacity: number | null
+          background_url: string | null
+          created_at: string
+          created_by: string | null
+          description: string | null
+          grid_size: number
+          height: number
+          id: string
+          name: string
+          stands_data: Json | null
+          updated_at: string
+          width: number
+        }
+        Insert: {
+          account_id?: string | null
+          background_opacity?: number | null
+          background_url?: string | null
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          grid_size?: number
+          height?: number
+          id?: string
+          name: string
+          stands_data?: Json | null
+          updated_at?: string
+          width?: number
+        }
+        Update: {
+          account_id?: string | null
+          background_opacity?: number | null
+          background_url?: string | null
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          grid_size?: number
+          height?: number
+          id?: string
+          name?: string
+          stands_data?: Json | null
+          updated_at?: string
+          width?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "floorplan_templates_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "accounts"
             referencedColumns: ["id"]
           },
         ]
