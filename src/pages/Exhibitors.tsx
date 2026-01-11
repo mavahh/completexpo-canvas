@@ -6,7 +6,9 @@ import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
+import { ExhibitorServicesDialog } from '@/components/exhibitors/ExhibitorServicesDialog';
 import {
   Dialog,
   DialogContent,
@@ -23,7 +25,32 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { Plus, Search, ArrowLeft, Edit2, Trash2, Loader2, User, Mail, Phone } from 'lucide-react';
+import { 
+  Plus, 
+  Search, 
+  ArrowLeft, 
+  Edit2, 
+  Trash2, 
+  Loader2, 
+  User, 
+  Mail, 
+  Phone,
+  Settings2,
+  Zap,
+  Droplets,
+  Lightbulb
+} from 'lucide-react';
+import type { Database } from '@/integrations/supabase/types';
+
+type PowerOption = Database['public']['Enums']['power_option'];
+
+interface ExhibitorServicesData {
+  water_connections: number;
+  power_option: PowerOption;
+  light_points: number;
+  construction_booked: boolean;
+  carpet_included: boolean;
+}
 
 interface Exhibitor {
   id: string;
@@ -33,7 +60,17 @@ interface Exhibitor {
   phone: string | null;
   vat: string | null;
   notes: string | null;
+  exhibitor_services: ExhibitorServicesData | null;
 }
+
+const powerLabels: Record<PowerOption, string> = {
+  NONE: '',
+  WATT_500: '500W',
+  WATT_2000: '2kW',
+  WATT_3500: '3.5kW',
+  AMP_16A: '16A',
+  AMP_32A: '32A',
+};
 
 export default function Exhibitors() {
   const { id: eventId } = useParams();
@@ -48,6 +85,7 @@ export default function Exhibitors() {
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [servicesExhibitor, setServicesExhibitor] = useState<{ id: string; name: string } | null>(null);
   const [form, setForm] = useState({
     name: '',
     contact_name: '',
@@ -74,12 +112,21 @@ export default function Exhibitors() {
 
     const { data, error } = await supabase
       .from('exhibitors')
-      .select('*')
+      .select(`
+        *,
+        exhibitor_services (
+          water_connections,
+          power_option,
+          light_points,
+          construction_booked,
+          carpet_included
+        )
+      `)
       .eq('event_id', eventId)
       .order('name');
 
     if (!error && data) {
-      setExhibitors(data);
+      setExhibitors(data as Exhibitor[]);
     }
     setLoading(false);
   };
@@ -173,6 +220,42 @@ export default function Exhibitors() {
     setForm({ name: '', contact_name: '', email: '', phone: '', vat: '', notes: '' });
   };
 
+  const getServicesBadges = (exhibitor: Exhibitor) => {
+    const services = exhibitor.exhibitor_services;
+    if (!services) return null;
+
+    const badges = [];
+    
+    if (services.power_option && services.power_option !== 'NONE') {
+      badges.push(
+        <Badge key="power" variant="secondary" className="gap-1">
+          <Zap className="w-3 h-3" />
+          {powerLabels[services.power_option]}
+        </Badge>
+      );
+    }
+    
+    if (services.water_connections > 0) {
+      badges.push(
+        <Badge key="water" variant="secondary" className="gap-1">
+          <Droplets className="w-3 h-3" />
+          {services.water_connections}x
+        </Badge>
+      );
+    }
+    
+    if (services.light_points > 0) {
+      badges.push(
+        <Badge key="lights" variant="secondary" className="gap-1">
+          <Lightbulb className="w-3 h-3" />
+          {services.light_points}x
+        </Badge>
+      );
+    }
+
+    return badges.length > 0 ? badges : null;
+  };
+
   const filteredExhibitors = exhibitors.filter((ex) =>
     ex.name.toLowerCase().includes(search.toLowerCase()) ||
     ex.contact_name?.toLowerCase().includes(search.toLowerCase()) ||
@@ -216,7 +299,7 @@ export default function Exhibitors() {
       {loading ? (
         <div className="space-y-3">
           {[1, 2, 3].map((i) => (
-            <div key={i} className="h-20 bg-muted animate-pulse rounded-lg" />
+            <div key={i} className="h-24 bg-muted animate-pulse rounded-lg" />
           ))}
         </div>
       ) : filteredExhibitors.length === 0 ? (
@@ -235,45 +318,62 @@ export default function Exhibitors() {
         </Card>
       ) : (
         <div className="space-y-3">
-          {filteredExhibitors.map((exhibitor) => (
-            <Card key={exhibitor.id} className="p-4 hover:border-primary/30 transition-colors">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-4">
-                  <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center">
-                    <User className="w-5 h-5 text-primary" />
-                  </div>
-                  <div>
-                    <h3 className="font-medium text-foreground">{exhibitor.name}</h3>
-                    <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                      {exhibitor.contact_name && (
-                        <span>{exhibitor.contact_name}</span>
-                      )}
-                      {exhibitor.email && (
-                        <span className="flex items-center gap-1">
-                          <Mail className="w-3 h-3" />
-                          {exhibitor.email}
-                        </span>
-                      )}
-                      {exhibitor.phone && (
-                        <span className="flex items-center gap-1">
-                          <Phone className="w-3 h-3" />
-                          {exhibitor.phone}
-                        </span>
+          {filteredExhibitors.map((exhibitor) => {
+            const servicesBadges = getServicesBadges(exhibitor);
+            
+            return (
+              <Card key={exhibitor.id} className="p-4 hover:border-primary/30 transition-colors">
+                <div className="flex items-start justify-between gap-4">
+                  <div className="flex items-start gap-4 flex-1 min-w-0">
+                    <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center flex-shrink-0">
+                      <User className="w-5 h-5 text-primary" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <h3 className="font-medium text-foreground">{exhibitor.name}</h3>
+                      <div className="flex items-center gap-4 text-sm text-muted-foreground flex-wrap">
+                        {exhibitor.contact_name && (
+                          <span>{exhibitor.contact_name}</span>
+                        )}
+                        {exhibitor.email && (
+                          <span className="flex items-center gap-1">
+                            <Mail className="w-3 h-3" />
+                            {exhibitor.email}
+                          </span>
+                        )}
+                        {exhibitor.phone && (
+                          <span className="flex items-center gap-1">
+                            <Phone className="w-3 h-3" />
+                            {exhibitor.phone}
+                          </span>
+                        )}
+                      </div>
+                      {servicesBadges && (
+                        <div className="flex items-center gap-2 mt-2 flex-wrap">
+                          {servicesBadges}
+                        </div>
                       )}
                     </div>
                   </div>
+                  <div className="flex items-center gap-1 flex-shrink-0">
+                    <Button 
+                      variant="ghost" 
+                      size="icon"
+                      onClick={() => setServicesExhibitor({ id: exhibitor.id, name: exhibitor.name })}
+                      title="Services beheren"
+                    >
+                      <Settings2 className="w-4 h-4" />
+                    </Button>
+                    <Button variant="ghost" size="icon" onClick={() => openEdit(exhibitor)}>
+                      <Edit2 className="w-4 h-4" />
+                    </Button>
+                    <Button variant="ghost" size="icon" onClick={() => setDeleteId(exhibitor.id)}>
+                      <Trash2 className="w-4 h-4 text-destructive" />
+                    </Button>
+                  </div>
                 </div>
-                <div className="flex items-center gap-2">
-                  <Button variant="ghost" size="icon" onClick={() => openEdit(exhibitor)}>
-                    <Edit2 className="w-4 h-4" />
-                  </Button>
-                  <Button variant="ghost" size="icon" onClick={() => setDeleteId(exhibitor.id)}>
-                    <Trash2 className="w-4 h-4 text-destructive" />
-                  </Button>
-                </div>
-              </div>
-            </Card>
-          ))}
+              </Card>
+            );
+          })}
         </div>
       )}
 
@@ -352,13 +452,28 @@ export default function Exhibitors() {
         </DialogContent>
       </Dialog>
 
+      {/* Services Dialog */}
+      {servicesExhibitor && (
+        <ExhibitorServicesDialog
+          open={!!servicesExhibitor}
+          onOpenChange={(open) => {
+            if (!open) {
+              setServicesExhibitor(null);
+              fetchExhibitors(); // Refresh to show updated badges
+            }
+          }}
+          exhibitorId={servicesExhibitor.id}
+          exhibitorName={servicesExhibitor.name}
+        />
+      )}
+
       {/* Delete confirmation */}
       <AlertDialog open={!!deleteId} onOpenChange={() => setDeleteId(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Exposant verwijderen?</AlertDialogTitle>
             <AlertDialogDescription>
-              Deze actie kan niet ongedaan worden gemaakt.
+              Deze actie kan niet ongedaan worden gemaakt. Alle gekoppelde services worden ook verwijderd.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
