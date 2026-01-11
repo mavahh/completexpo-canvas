@@ -161,7 +161,6 @@ export default function FloorplanEditor() {
           standId: a.id,
           standLabel: a.label,
           message: `Overlapt met ${b.label}`,
-          relatedStandId: b.id,
         });
       }
     }

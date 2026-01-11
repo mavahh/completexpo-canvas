@@ -5,10 +5,12 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { SidebarTrigger } from '@/components/ui/sidebar';
+import { ThemeToggle } from './ThemeToggle';
+import { EventSelector } from '@/components/dashboard/EventSelector';
 
 export function TopBar() {
   const { user } = useAuth();
-  const { eventName, eventLocation } = useCurrentEvent();
+  const { eventId, eventName, eventLocation, setCurrentEvent } = useCurrentEvent();
 
   const userName = user?.user_metadata?.name || user?.email?.split('@')[0] || 'User';
   const initials = userName
@@ -23,22 +25,24 @@ export function TopBar() {
       <div className="flex items-center gap-4">
         <SidebarTrigger className="lg:hidden" />
         
-        {/* Event context */}
-        <div>
-          {eventName ? (
-            <div>
-              <h1 className="text-lg font-semibold text-foreground">{eventName}</h1>
-              {eventLocation && (
-                <div className="flex items-center gap-1 text-sm text-muted-foreground">
-                  <MapPin className="w-3 h-3" />
-                  <span>{eventLocation}</span>
-                </div>
-              )}
-            </div>
-          ) : (
-            <h1 className="text-lg font-semibold text-muted-foreground">Select an event</h1>
-          )}
-        </div>
+        {/* Event selector */}
+        <EventSelector
+          selectedEventId={eventId}
+          onEventChange={(id) => setCurrentEvent(id)}
+        />
+        
+        {/* Event context display */}
+        {eventName && (
+          <div className="hidden md:block border-l border-border pl-4">
+            <h1 className="text-sm font-semibold text-foreground">{eventName}</h1>
+            {eventLocation && (
+              <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                <MapPin className="w-3 h-3" />
+                <span>{eventLocation}</span>
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Search */}
@@ -53,7 +57,8 @@ export function TopBar() {
       </div>
 
       {/* Right side */}
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-2">
+        <ThemeToggle />
         <Button variant="ghost" size="icon" className="text-muted-foreground">
           <Bell className="w-5 h-5" />
         </Button>
