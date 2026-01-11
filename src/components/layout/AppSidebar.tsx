@@ -50,7 +50,7 @@ const navItems: NavItem[] = [
   { title: 'Exhibitors', icon: Users, path: '/exhibitors', requiresEvent: true },
   { title: 'Exposanten Bibliotheek', icon: Library, path: '/exhibitor-library', requiresAccount: true },
   { title: 'Templates', icon: FileText, path: '/templates', requiresAccount: true },
-  { title: 'Team', icon: UsersRound, path: '/team', requiresAccount: true, accountAdminOnly: true },
+  { title: 'Team', icon: UsersRound, path: '/team', requiresAccount: true },
   { title: 'Settings', icon: Settings, path: '/settings', requiresEvent: true },
 ];
 
