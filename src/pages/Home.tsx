@@ -6,6 +6,7 @@ import { ModuleTile } from '@/components/home/ModuleTile';
 import { QuickActionsCard } from '@/components/home/QuickActionsCard';
 import { HomeEventSelector } from '@/components/home/HomeEventSelector';
 import { HomeSearch } from '@/components/home/HomeSearch';
+import { WelcomeCard } from '@/components/home/WelcomeCard';
 import { Rocket } from 'lucide-react';
 
 export default function Home() {
@@ -49,6 +50,9 @@ export default function Home() {
 
   return (
     <div className="space-y-6">
+      {/* Welcome Card with Recent Activity */}
+      <WelcomeCard />
+
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
