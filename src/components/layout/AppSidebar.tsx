@@ -9,6 +9,9 @@ import {
   Building2,
   FileText,
   Library,
+  UsersRound,
+  Mail,
+  Shield,
 } from 'lucide-react';
 import { useAuth } from '@/lib/auth';
 import { usePermissions, GlobalModuleVisibility } from '@/hooks/usePermissions';
@@ -37,6 +40,7 @@ interface NavItem {
   superAdminOnly?: boolean;
   requiresEvent?: boolean;
   requiresAccount?: boolean;
+  accountAdminOnly?: boolean;
 }
 
 const navItems: NavItem[] = [
@@ -46,13 +50,16 @@ const navItems: NavItem[] = [
   { title: 'Exhibitors', icon: Users, path: '/exhibitors', requiresEvent: true },
   { title: 'Exposanten Bibliotheek', icon: Library, path: '/exhibitor-library', requiresAccount: true },
   { title: 'Templates', icon: FileText, path: '/templates', requiresAccount: true },
+  { title: 'Team', icon: UsersRound, path: '/team', requiresAccount: true, accountAdminOnly: true },
   { title: 'Settings', icon: Settings, path: '/settings', requiresEvent: true },
 ];
 
 const adminItems: NavItem[] = [
+  { title: 'Admin Dashboard', icon: Shield, path: '/admin', superAdminOnly: true },
   { title: 'Accounts', icon: Building2, path: '/admin/accounts', superAdminOnly: true },
   { title: 'Demo Requests', icon: FileText, path: '/admin/demo-requests', superAdminOnly: true },
-  { title: 'Users', icon: Users, path: '/users', module: 'USERS', permission: 'USERS_VIEW' },
+  { title: 'Email Outbox', icon: Mail, path: '/admin/email-outbox', superAdminOnly: true },
+  { title: 'Users', icon: Users, path: '/admin/users', superAdminOnly: true },
 ];
 
 export function AppSidebar() {
@@ -60,7 +67,7 @@ export function AppSidebar() {
   const navigate = useNavigate();
   const { signOut } = useAuth();
   const { hasPermission, isModuleVisible, isSystemAdmin } = usePermissions();
-  const { isSuperAdmin, account } = useMultiTenant();
+  const { isSuperAdmin, isAccountAdmin, account } = useMultiTenant();
   const { eventId } = useCurrentEvent();
 
   const handleSignOut = async () => {
@@ -94,6 +101,7 @@ export function AppSidebar() {
   const shouldShowItem = (item: NavItem) => {
     if (item.superAdminOnly && !isSuperAdmin) return false;
     if (item.adminOnly && !isSystemAdmin) return false;
+    if (item.accountAdminOnly && !isAccountAdmin) return false;
     if (item.module && !isModuleVisible(item.module)) return false;
     if (item.permission && !hasPermission(item.permission)) return false;
     if (item.requiresEvent && !eventId) return false;
