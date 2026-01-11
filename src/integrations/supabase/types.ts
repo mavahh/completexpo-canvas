@@ -14,6 +14,53 @@ export type Database = {
   }
   public: {
     Tables: {
+      event_documents: {
+        Row: {
+          created_at: string
+          event_id: string
+          file_url: string
+          filename: string
+          id: string
+          language: Database["public"]["Enums"]["document_language"]
+          type: Database["public"]["Enums"]["document_type"]
+          updated_at: string
+          uploaded_at: string
+          uploaded_by: string | null
+        }
+        Insert: {
+          created_at?: string
+          event_id: string
+          file_url: string
+          filename: string
+          id?: string
+          language: Database["public"]["Enums"]["document_language"]
+          type?: Database["public"]["Enums"]["document_type"]
+          updated_at?: string
+          uploaded_at?: string
+          uploaded_by?: string | null
+        }
+        Update: {
+          created_at?: string
+          event_id?: string
+          file_url?: string
+          filename?: string
+          id?: string
+          language?: Database["public"]["Enums"]["document_language"]
+          type?: Database["public"]["Enums"]["document_type"]
+          updated_at?: string
+          uploaded_at?: string
+          uploaded_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "event_documents_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       event_members: {
         Row: {
           created_at: string
@@ -53,6 +100,8 @@ export type Database = {
           id: string
           location: string | null
           name: string
+          public_request_token: string | null
+          public_requests_enabled: boolean
           start_date: string | null
           updated_at: string
         }
@@ -62,6 +111,8 @@ export type Database = {
           id?: string
           location?: string | null
           name: string
+          public_request_token?: string | null
+          public_requests_enabled?: boolean
           start_date?: string | null
           updated_at?: string
         }
@@ -71,6 +122,8 @@ export type Database = {
           id?: string
           location?: string | null
           name?: string
+          public_request_token?: string | null
+          public_requests_enabled?: boolean
           start_date?: string | null
           updated_at?: string
         }
@@ -223,6 +276,27 @@ export type Database = {
           },
         ]
       }
+      permissions: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          name: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          name: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          name?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           created_at: string
@@ -246,6 +320,131 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      role_permissions: {
+        Row: {
+          created_at: string
+          id: string
+          permission_id: string
+          role: Database["public"]["Enums"]["system_role"]
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          permission_id: string
+          role: Database["public"]["Enums"]["system_role"]
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          permission_id?: string
+          role?: Database["public"]["Enums"]["system_role"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "role_permissions_permission_id_fkey"
+            columns: ["permission_id"]
+            isOneToOne: false
+            referencedRelation: "permissions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      stand_requests: {
+        Row: {
+          carpet_included: boolean
+          company_name: string
+          construction_booked: boolean
+          contact_name: string
+          created_at: string
+          created_exhibitor_id: string | null
+          email: string
+          event_id: string
+          id: string
+          light_points: number
+          notes: string | null
+          phone: string | null
+          power_option: Database["public"]["Enums"]["power_option"]
+          processed_at: string | null
+          processed_by: string | null
+          requested_area: number | null
+          requested_height: number | null
+          requested_stand_label: string | null
+          requested_width: number | null
+          status: Database["public"]["Enums"]["request_status"]
+          surface_type: Database["public"]["Enums"]["surface_type"]
+          updated_at: string
+          vat: string | null
+          water_connections: number
+        }
+        Insert: {
+          carpet_included?: boolean
+          company_name: string
+          construction_booked?: boolean
+          contact_name: string
+          created_at?: string
+          created_exhibitor_id?: string | null
+          email: string
+          event_id: string
+          id?: string
+          light_points?: number
+          notes?: string | null
+          phone?: string | null
+          power_option?: Database["public"]["Enums"]["power_option"]
+          processed_at?: string | null
+          processed_by?: string | null
+          requested_area?: number | null
+          requested_height?: number | null
+          requested_stand_label?: string | null
+          requested_width?: number | null
+          status?: Database["public"]["Enums"]["request_status"]
+          surface_type?: Database["public"]["Enums"]["surface_type"]
+          updated_at?: string
+          vat?: string | null
+          water_connections?: number
+        }
+        Update: {
+          carpet_included?: boolean
+          company_name?: string
+          construction_booked?: boolean
+          contact_name?: string
+          created_at?: string
+          created_exhibitor_id?: string | null
+          email?: string
+          event_id?: string
+          id?: string
+          light_points?: number
+          notes?: string | null
+          phone?: string | null
+          power_option?: Database["public"]["Enums"]["power_option"]
+          processed_at?: string | null
+          processed_by?: string | null
+          requested_area?: number | null
+          requested_height?: number | null
+          requested_stand_label?: string | null
+          requested_width?: number | null
+          status?: Database["public"]["Enums"]["request_status"]
+          surface_type?: Database["public"]["Enums"]["surface_type"]
+          updated_at?: string
+          vat?: string | null
+          water_connections?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "stand_requests_created_exhibitor_id_fkey"
+            columns: ["created_exhibitor_id"]
+            isOneToOne: false
+            referencedRelation: "exhibitors"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "stand_requests_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       stands: {
         Row: {
@@ -320,6 +519,69 @@ export type Database = {
           },
         ]
       }
+      user_permission_overrides: {
+        Row: {
+          created_at: string
+          event_id: string | null
+          granted: boolean
+          id: string
+          permission_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          event_id?: string | null
+          granted?: boolean
+          id?: string
+          permission_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          event_id?: string | null
+          granted?: boolean
+          id?: string
+          permission_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_permission_overrides_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_permission_overrides_permission_id_fkey"
+            columns: ["permission_id"]
+            isOneToOne: false
+            referencedRelation: "permissions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_roles: {
+        Row: {
+          created_at: string
+          id: string
+          role: Database["public"]["Enums"]["system_role"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          role: Database["public"]["Enums"]["system_role"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          role?: Database["public"]["Enums"]["system_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
@@ -338,6 +600,8 @@ export type Database = {
           id: string
           location: string | null
           name: string
+          public_request_token: string | null
+          public_requests_enabled: boolean
           start_date: string | null
           updated_at: string
         }
@@ -348,12 +612,26 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      has_permission: {
+        Args: { _event_id?: string; _permission_name: string; _user_id: string }
+        Returns: boolean
+      }
+      has_system_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["system_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
       is_event_member: {
         Args: { _event_id: string; _user_id: string }
         Returns: boolean
       }
+      is_system_admin: { Args: { _user_id: string }; Returns: boolean }
     }
     Enums: {
+      document_language: "NL" | "FR" | "EN" | "DE"
+      document_type: "TERMS"
       event_role: "ADMIN" | "USER"
       power_option:
         | "NONE"
@@ -362,7 +640,9 @@ export type Database = {
         | "WATT_3500"
         | "AMP_16A"
         | "AMP_32A"
+      request_status: "NEW" | "APPROVED" | "REJECTED" | "PROCESSED"
       surface_type: "EMPTY" | "EMPTY_WITH_CARPET" | "WITH_CONSTRUCTION"
+      system_role: "ADMIN" | "MANAGER" | "BUILDER"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -490,6 +770,8 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      document_language: ["NL", "FR", "EN", "DE"],
+      document_type: ["TERMS"],
       event_role: ["ADMIN", "USER"],
       power_option: [
         "NONE",
@@ -499,7 +781,9 @@ export const Constants = {
         "AMP_16A",
         "AMP_32A",
       ],
+      request_status: ["NEW", "APPROVED", "REJECTED", "PROCESSED"],
       surface_type: ["EMPTY", "EMPTY_WITH_CARPET", "WITH_CONSTRUCTION"],
+      system_role: ["ADMIN", "MANAGER", "BUILDER"],
     },
   },
 } as const
