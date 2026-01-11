@@ -67,7 +67,7 @@ export default function EventUsers() {
           id,
           user_id,
           role,
-          profiles!event_members_user_id_fkey(email, name)
+          profiles(email, name)
         `)
         .eq('event_id', eventId);
 
