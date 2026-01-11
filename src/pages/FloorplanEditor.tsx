@@ -10,6 +10,8 @@ import { useEventRole } from '@/hooks/useEventRole';
 import { useDarkMode } from '@/hooks/useDarkMode';
 import { BackgroundUpload } from '@/components/floorplan/BackgroundUpload';
 import { HallSelector } from '@/components/floorplan/HallSelector';
+import { StandServiceIcons } from '@/components/floorplan/StandServiceIcons';
+import { ExhibitorServicesPanel } from '@/components/floorplan/ExhibitorServicesPanel';
 import {
   Select,
   SelectContent,
@@ -54,6 +56,16 @@ interface Exhibitor {
   name: string;
 }
 
+interface ExhibitorServices {
+  exhibitor_id: string;
+  water_connections: number;
+  power_option: string;
+  light_points: number;
+  construction_booked: boolean;
+  carpet_included: boolean;
+  surface_type: string;
+}
+
 interface Floorplan {
   id: string;
   event_id: string;
@@ -81,6 +93,7 @@ export default function FloorplanEditor() {
   const [selectedFloorplanId, setSelectedFloorplanId] = useState<string | null>(null);
   const [stands, setStands] = useState<Stand[]>([]);
   const [exhibitors, setExhibitors] = useState<Exhibitor[]>([]);
+  const [exhibitorServices, setExhibitorServices] = useState<ExhibitorServices[]>([]);
   const [selectedStandId, setSelectedStandId] = useState<string | null>(null);
   const [activeExhibitorId, setActiveExhibitorId] = useState<string | null>(null);
   const [exhibitorSearch, setExhibitorSearch] = useState('');
@@ -134,7 +147,7 @@ export default function FloorplanEditor() {
       setSelectedFloorplanId(floorplanData[0].id);
     }
 
-    // Fetch exhibitors
+    // Fetch exhibitors and their services
     const { data: exhibitorsData } = await supabase
       .from('exhibitors')
       .select('id, name')
@@ -143,6 +156,19 @@ export default function FloorplanEditor() {
 
     if (exhibitorsData) {
       setExhibitors(exhibitorsData);
+      
+      // Fetch services for all exhibitors
+      const exhibitorIds = exhibitorsData.map(e => e.id);
+      if (exhibitorIds.length > 0) {
+        const { data: servicesData } = await supabase
+          .from('exhibitor_services')
+          .select('*')
+          .in('exhibitor_id', exhibitorIds);
+        
+        if (servicesData) {
+          setExhibitorServices(servicesData as ExhibitorServices[]);
+        }
+      }
     }
 
     setLoading(false);
@@ -587,6 +613,9 @@ export default function FloorplanEditor() {
             {stands.map((stand) => {
               const isSelected = selectedStandId === stand.id;
               const exhibitorName = getExhibitorName(stand.exhibitor_id);
+              const standServices = stand.exhibitor_id 
+                ? exhibitorServices.find(s => s.exhibitor_id === stand.exhibitor_id) 
+                : null;
 
               return (
                 <div
@@ -612,6 +641,11 @@ export default function FloorplanEditor() {
                       </div>
                     )}
                   </div>
+
+                  {/* Service icons */}
+                  {standServices && (
+                    <StandServiceIcons services={standServices} zoom={zoom} />
+                  )}
 
                   {/* Resize handles - only for edit mode */}
                   {isSelected && canEdit && (
@@ -781,11 +815,20 @@ export default function FloorplanEditor() {
                 />
               </div>
 
+              {/* Exhibitor Services Panel */}
+              <ExhibitorServicesPanel
+                exhibitorName={getExhibitorName(selectedStand.exhibitor_id)}
+                services={selectedStand.exhibitor_id 
+                  ? exhibitorServices.find(s => s.exhibitor_id === selectedStand.exhibitor_id) || null
+                  : null
+                }
+              />
+
               {canEdit && (
                 <Button
                   variant="destructive"
                   size="sm"
-                  className="w-full"
+                  className="w-full mt-4"
                   onClick={deleteStand}
                 >
                   <Trash2 className="w-4 h-4 mr-2" />

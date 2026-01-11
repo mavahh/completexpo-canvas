@@ -17,7 +17,8 @@ import {
   Loader2,
   Calendar,
   MapPin,
-  LayoutGrid
+  LayoutGrid,
+  ClipboardList
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { nl } from 'date-fns/locale';
@@ -34,6 +35,7 @@ interface Stats {
   exhibitors: number;
   stands: number;
   floorplans: number;
+  requests: number;
 }
 
 const tiles = [
@@ -41,10 +43,11 @@ const tiles = [
   { id: 'floorplan', label: 'Plattegrond', icon: Layout, path: 'floorplan', description: 'Beheer hal layouts' },
   { id: 'orders', label: 'Bestellingen', icon: ShoppingCart, description: 'Exposant bestellingen', disabled: true },
   { id: 'exhibitors', label: 'Exposanten', icon: Users, path: 'exhibitors', description: 'Beheer deelnemers' },
+  { id: 'requests', label: 'Aanvragen', icon: ClipboardList, path: 'requests', description: 'Stand aanvragen' },
   { id: 'messages', label: 'Berichten', icon: MessageSquare, description: 'Communicatie', disabled: true },
   { id: 'partnerships', label: 'Partners', icon: Handshake, description: 'Partnerbeheer', disabled: true },
-  { id: 'settings', label: 'Instellingen', icon: Settings, description: 'Event configuratie', disabled: true },
-  { id: 'users', label: 'Gebruikers', icon: UserCog, description: 'Teambeheer', disabled: true },
+  { id: 'settings', label: 'Instellingen', icon: Settings, path: 'settings', description: 'Event configuratie' },
+  { id: 'users', label: 'Toegang', icon: UserCog, path: 'users', description: 'Teambeheer' },
   { id: 'credits', label: 'Credits', icon: CreditCard, description: 'Facturatie', disabled: true },
 ];
 
@@ -52,7 +55,7 @@ export default function EventDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
   const [event, setEvent] = useState<Event | null>(null);
-  const [stats, setStats] = useState<Stats>({ exhibitors: 0, stands: 0, floorplans: 0 });
+  const [stats, setStats] = useState<Stats>({ exhibitors: 0, stands: 0, floorplans: 0, requests: 0 });
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -77,16 +80,18 @@ export default function EventDetail() {
     setEvent(eventData);
 
     // Fetch stats in parallel
-    const [exhibitorsRes, standsRes, floorplansRes] = await Promise.all([
+    const [exhibitorsRes, standsRes, floorplansRes, requestsRes] = await Promise.all([
       supabase.from('exhibitors').select('id', { count: 'exact', head: true }).eq('event_id', id),
       supabase.from('stands').select('id', { count: 'exact', head: true }).eq('event_id', id),
       supabase.from('floorplans').select('id', { count: 'exact', head: true }).eq('event_id', id),
+      supabase.from('stand_requests').select('id', { count: 'exact', head: true }).eq('event_id', id).eq('status', 'NEW'),
     ]);
 
     setStats({
       exhibitors: exhibitorsRes.count || 0,
       stands: standsRes.count || 0,
       floorplans: floorplansRes.count || 0,
+      requests: requestsRes.count || 0,
     });
 
     setLoading(false);
@@ -172,6 +177,20 @@ export default function EventDetail() {
               <p className="text-xs text-muted-foreground">Hallen</p>
             </div>
           </div>
+          {stats.requests > 0 && (
+            <>
+              <div className="w-px h-12 bg-border" />
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-orange-500/10 rounded-lg flex items-center justify-center">
+                  <ClipboardList className="w-5 h-5 text-orange-500" />
+                </div>
+                <div>
+                  <p className="text-2xl font-bold text-orange-500">{stats.requests}</p>
+                  <p className="text-xs text-muted-foreground">Nieuwe aanvragen</p>
+                </div>
+              </div>
+            </>
+          )}
         </div>
       </div>
 
