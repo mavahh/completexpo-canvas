@@ -11,6 +11,8 @@ import Landing from "./pages/Landing";
 import Login from "./pages/Login";
 import DemoRequest from "./pages/DemoRequest";
 import PendingApproval from "./pages/PendingApproval";
+import AcceptInvite from "./pages/AcceptInvite";
+import ExhibitorPortal from "./pages/ExhibitorPortal";
 import Dashboard from "./pages/Dashboard";
 import Events from "./pages/Events";
 import EventForm from "./pages/EventForm";
@@ -21,9 +23,13 @@ import FloorplanEditor from "./pages/FloorplanEditor";
 import Users from "./pages/Users";
 import UserDetail from "./pages/UserDetail";
 import Roles from "./pages/Roles";
+import Team from "./pages/Team";
 import Accounts from "./pages/Accounts";
 import AccountDetail from "./pages/AccountDetail";
 import DemoRequests from "./pages/DemoRequests";
+import AdminDashboard from "./pages/AdminDashboard";
+import AdminEmailOutbox from "./pages/AdminEmailOutbox";
+import AdminUsers from "./pages/AdminUsers";
 import EventSettings from "./pages/EventSettings";
 import EventUsers from "./pages/EventUsers";
 import EventRequests from "./pages/EventRequests";
@@ -56,6 +62,8 @@ const App = () => (
             <Route path="/demo-request" element={<DemoRequest />} />
             <Route path="/pending-approval" element={<PendingApproval />} />
             <Route path="/request/:token" element={<PublicRequest />} />
+            <Route path="/invite/:token" element={<AcceptInvite />} />
+            <Route path="/exhibitor/:token" element={<ExhibitorPortal />} />
 
             {/* Protected routes */}
             <Route element={<ProtectedRoute><DashboardLayout /></ProtectedRoute>}>
@@ -74,15 +82,19 @@ const App = () => (
               <Route path="/users" element={<Users />} />
               <Route path="/users/:userId" element={<UserDetail />} />
               <Route path="/roles" element={<Roles />} />
+              <Route path="/team" element={<Team />} />
               <Route path="/exhibitor-library" element={<ExhibitorLibrary />} />
               <Route path="/settings" element={<PlaceholderPage title="Instellingen" />} />
               <Route path="/templates" element={<Templates />} />
               <Route path="/crm" element={<PlaceholderPage title="CRM" />} />
               
               {/* Super admin routes */}
+              <Route path="/admin" element={<AdminDashboard />} />
               <Route path="/admin/accounts" element={<Accounts />} />
               <Route path="/admin/accounts/:accountId" element={<AccountDetail />} />
               <Route path="/admin/demo-requests" element={<DemoRequests />} />
+              <Route path="/admin/email-outbox" element={<AdminEmailOutbox />} />
+              <Route path="/admin/users" element={<AdminUsers />} />
             </Route>
 
             {/* Catch-all */}
