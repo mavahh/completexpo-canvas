@@ -9,6 +9,8 @@ import { DashboardLayout } from "@/components/layout/DashboardLayout";
 
 import Landing from "./pages/Landing";
 import Login from "./pages/Login";
+import DemoRequest from "./pages/DemoRequest";
+import PendingApproval from "./pages/PendingApproval";
 import Dashboard from "./pages/Dashboard";
 import Events from "./pages/Events";
 import EventForm from "./pages/EventForm";
@@ -18,6 +20,8 @@ import FloorplanEditor from "./pages/FloorplanEditor";
 import Users from "./pages/Users";
 import UserDetail from "./pages/UserDetail";
 import Roles from "./pages/Roles";
+import Accounts from "./pages/Accounts";
+import DemoRequests from "./pages/DemoRequests";
 import EventSettings from "./pages/EventSettings";
 import EventUsers from "./pages/EventUsers";
 import EventRequests from "./pages/EventRequests";
@@ -46,6 +50,8 @@ const App = () => (
             {/* Public routes */}
             <Route path="/" element={<AuthRedirect><Landing /></AuthRedirect>} />
             <Route path="/login" element={<AuthRedirect><Login /></AuthRedirect>} />
+            <Route path="/demo-request" element={<DemoRequest />} />
+            <Route path="/pending-approval" element={<PendingApproval />} />
             <Route path="/request/:token" element={<PublicRequest />} />
 
             {/* Protected routes */}
@@ -67,6 +73,10 @@ const App = () => (
               <Route path="/roles" element={<Roles />} />
               <Route path="/settings" element={<PlaceholderPage title="Instellingen" />} />
               <Route path="/crm" element={<PlaceholderPage title="CRM" />} />
+              
+              {/* Super admin routes */}
+              <Route path="/admin/accounts" element={<Accounts />} />
+              <Route path="/admin/demo-requests" element={<DemoRequests />} />
             </Route>
 
             {/* Catch-all */}

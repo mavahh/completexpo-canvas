@@ -1,6 +1,7 @@
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/lib/auth';
 import { usePermissions, GlobalModuleVisibility } from '@/hooks/usePermissions';
+import { useMultiTenant } from '@/hooks/useMultiTenant';
 import { Button } from '@/components/ui/button';
 import { LogOut, HelpCircle, Globe } from 'lucide-react';
 
@@ -10,6 +11,7 @@ interface TabConfig {
   module?: keyof GlobalModuleVisibility;
   permission?: string;
   adminOnly?: boolean;
+  superAdminOnly?: boolean;
 }
 
 const mainTabs: TabConfig[] = [
@@ -17,12 +19,14 @@ const mainTabs: TabConfig[] = [
   { label: 'Evenementen', path: '/events', module: 'EVENTS' },
   { label: 'Gebruikers', path: '/users', module: 'USERS', permission: 'USERS_VIEW' },
   { label: 'Rollen', path: '/roles', adminOnly: true },
+  { label: 'Accounts', path: '/admin/accounts', superAdminOnly: true },
   { label: 'CRM', path: '/crm', module: 'CRM' },
 ];
 
 export function Header() {
   const { user, signOut } = useAuth();
   const { hasPermission, isModuleVisible, isSystemAdmin } = usePermissions();
+  const { isSuperAdmin } = useMultiTenant();
   const location = useLocation();
   const navigate = useNavigate();
 
@@ -86,7 +90,9 @@ export function Header() {
       {/* Tab navigation */}
       <nav className="flex items-center gap-1 px-6">
         {mainTabs.map((tab) => {
-          // Check admin-only first
+          // Check super admin only first
+          if (tab.superAdminOnly && !isSuperAdmin) return null;
+          // Check admin-only
           if (tab.adminOnly && !isSystemAdmin) return null;
           // Check module visibility
           if (tab.module && !isModuleVisible(tab.module)) return null;

@@ -14,6 +14,92 @@ export type Database = {
   }
   public: {
     Tables: {
+      accounts: {
+        Row: {
+          approved_at: string | null
+          approved_by: string | null
+          created_at: string
+          id: string
+          name: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          approved_at?: string | null
+          approved_by?: string | null
+          created_at?: string
+          id?: string
+          name: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          approved_at?: string | null
+          approved_by?: string | null
+          created_at?: string
+          id?: string
+          name?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      demo_requests: {
+        Row: {
+          company_name: string
+          contact_name: string
+          created_account_id: string | null
+          created_at: string
+          email: string
+          id: string
+          phone: string | null
+          processed_at: string | null
+          processed_by: string | null
+          reason: string | null
+          status: string
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          company_name: string
+          contact_name: string
+          created_account_id?: string | null
+          created_at?: string
+          email: string
+          id?: string
+          phone?: string | null
+          processed_at?: string | null
+          processed_by?: string | null
+          reason?: string | null
+          status?: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          company_name?: string
+          contact_name?: string
+          created_account_id?: string | null
+          created_at?: string
+          email?: string
+          id?: string
+          phone?: string | null
+          processed_at?: string | null
+          processed_by?: string | null
+          reason?: string | null
+          status?: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "demo_requests_created_account_id_fkey"
+            columns: ["created_account_id"]
+            isOneToOne: false
+            referencedRelation: "accounts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       event_documents: {
         Row: {
           created_at: string
@@ -108,6 +194,7 @@ export type Database = {
       }
       events: {
         Row: {
+          account_id: string | null
           created_at: string
           end_date: string | null
           id: string
@@ -119,6 +206,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          account_id?: string | null
           created_at?: string
           end_date?: string | null
           id?: string
@@ -130,6 +218,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          account_id?: string | null
           created_at?: string
           end_date?: string | null
           id?: string
@@ -140,7 +229,15 @@ export type Database = {
           start_date?: string | null
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "events_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "accounts"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       exhibitor_services: {
         Row: {
@@ -312,30 +409,44 @@ export type Database = {
       }
       profiles: {
         Row: {
+          account_id: string | null
           created_at: string
           email: string
           global_module_visibility: Json | null
           id: string
+          is_account_admin: boolean | null
           name: string | null
           updated_at: string
         }
         Insert: {
+          account_id?: string | null
           created_at?: string
           email: string
           global_module_visibility?: Json | null
           id: string
+          is_account_admin?: boolean | null
           name?: string | null
           updated_at?: string
         }
         Update: {
+          account_id?: string | null
           created_at?: string
           email?: string
           global_module_visibility?: Json | null
           id?: string
+          is_account_admin?: boolean | null
           name?: string | null
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "profiles_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "accounts"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       role_permissions: {
         Row: {
@@ -535,6 +646,24 @@ export type Database = {
           },
         ]
       }
+      super_admins: {
+        Row: {
+          created_at: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_permission_overrides: {
         Row: {
           created_at: string
@@ -611,6 +740,7 @@ export type Database = {
           _start_date: string
         }
         Returns: {
+          account_id: string | null
           created_at: string
           end_date: string | null
           id: string
@@ -628,6 +758,7 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      get_user_account_id: { Args: { _user_id: string }; Returns: string }
       has_event_permission: {
         Args: { _event_id: string; _permission_name: string; _user_id: string }
         Returns: boolean
@@ -651,6 +782,7 @@ export type Database = {
         Args: { _module_name: string; _user_id: string }
         Returns: boolean
       }
+      is_super_admin: { Args: { _user_id: string }; Returns: boolean }
       is_system_admin: { Args: { _user_id: string }; Returns: boolean }
       is_tile_visible: {
         Args: { _event_id: string; _tile_name: string; _user_id: string }
