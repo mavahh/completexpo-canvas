@@ -1,73 +1,149 @@
-# Welcome to your Lovable project
+# ComplexExpo - Exhibition Floor Plan Management
 
-## Project info
+Exhibition management platform with an advanced floorplan editor for managing events, stands, and exhibitors.
 
-**URL**: https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID
-
-## How can I edit this code?
-
-There are several ways of editing your application.
-
-**Use Lovable**
-
-Simply visit the [Lovable Project](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and start prompting.
-
-Changes made via Lovable will be committed automatically to this repo.
-
-**Use your preferred IDE**
-
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
-
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
-
-Follow these steps:
+## Quick Start
 
 ```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
+# Install dependencies
+npm install
 
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
-
-# Step 3: Install the necessary dependencies.
-npm i
-
-# Step 4: Start the development server with auto-reloading and an instant preview.
+# Start development server
 npm run dev
 ```
 
-**Edit a file directly in GitHub**
+## Demo Accounts
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+| Role | Email | Access |
+|------|-------|--------|
+| Super Admin | Contact administrator | Full system access |
+| Account Admin | Via demo request | Account-level management |
+| Event User | Invited by admin | Event-specific access |
 
-**Use GitHub Codespaces**
+## Features
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+### Floorplan Editor
 
-## What technologies are used for this project?
+The floorplan editor provides a comprehensive toolset for designing and managing exhibition floor plans.
 
-This project is built with:
+#### Keyboard Shortcuts
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+| Shortcut | Action |
+|----------|--------|
+| `F` | Toggle fullscreen mode |
+| `Space + Drag` | Pan the canvas |
+| `Scroll` | Zoom in/out |
+| `Shift + Click` | Multi-select stands |
+| `Escape` | Clear selection |
+| `Delete` | Delete selected stand(s) |
 
-## How can I deploy this project?
+#### Zoom & Pan Controls
 
-Simply open [Lovable](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and click on Share -> Publish.
+- **Mouse wheel**: Zoom centered on cursor
+- **Zoom buttons**: +/- buttons in toolbar
+- **Fit to screen**: Button to fit entire floorplan in view
+- **Reset zoom**: Return to 100% zoom
+- **Space + drag**: Pan around the canvas
 
-## Can I connect a custom domain to my Lovable project?
+#### Multi-Select & Bulk Actions
 
-Yes, you can!
+When multiple stands are selected (Shift+click):
+- **Set status**: Apply same status to all selected
+- **Snap to grid**: Align all selected to grid
+- **Clear exhibitor**: Remove exhibitor links
+- **Rotate**: Rotate all selected by 90°
+- **Export labels**: Download CSV with stand data
 
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
+#### Label Generator
 
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
+Generate sequential labels for stands:
+
+1. Click "Labels" button in toolbar
+2. Choose mode:
+   - **Prefix + number**: A1, A2, A3... or Hall-001, Hall-002...
+   - **Numeric series**: 101, 102, 103...
+3. Set start number and padding
+4. Apply to selected stands or all stands
+5. Duplicates are automatically handled
+
+#### Warnings Engine
+
+The Warnings tab detects issues:
+- **Duplicate labels**: Same label used multiple times
+- **Out of bounds**: Stands outside floorplan area
+- **Overlapping stands**: Stands intersecting each other
+- **Missing labels**: Stands without labels
+
+**Fix helpers:**
+- "Fix duplicates": Auto-rename with unique suffixes
+- "Move into bounds": Clamp stands to valid area
+
+#### Export Options
+
+Export floorplans as PNG or PDF:
+- Choose format (PNG/PDF)
+- Include/exclude legend
+- Include/exclude title and date
+- Hide grid lines
+- Select quality (1x, 2x, 3x)
+
+### Templates
+
+Save floorplan layouts as reusable templates:
+
+1. Open a floorplan in the editor
+2. Click "Save as template" 
+3. Enter template name and description
+4. Template saves: dimensions, grid, background, stands (without exhibitor links)
+
+**Using templates:**
+- Navigate to Templates page
+- View, duplicate, or delete templates
+- Use templates when creating new events
+
+### Exhibitor Library
+
+Maintain a global database of exhibitors:
+- Add companies to library with contact details
+- Search and filter library
+- Quick-add to events from library
+- Link event exhibitors to library profiles
+
+### Audit Log
+
+All changes are logged with:
+- Timestamp
+- User who made the change
+- Action type (create, update, delete)
+- Changed fields (before/after)
+- Click log entry to navigate to affected stand
+
+## Technologies
+
+- **Frontend**: React, TypeScript, Vite
+- **Styling**: Tailwind CSS, shadcn/ui
+- **Backend**: Lovable Cloud (Supabase)
+- **Charts**: Recharts
+- **PDF**: jsPDF
+- **Canvas**: html2canvas
+
+## Architecture
+
+```
+src/
+├── components/
+│   ├── floorplan/      # Floorplan editor components
+│   ├── layout/         # App layout (sidebar, header)
+│   ├── dashboard/      # Dashboard widgets
+│   └── ui/             # shadcn/ui components
+├── hooks/              # Custom React hooks
+├── pages/              # Route pages
+├── lib/                # Utilities and auth
+└── integrations/       # Backend integrations
+```
+
+## Deployment
+
+Click **Share → Publish** in Lovable to deploy.
+
+For custom domains, go to **Project → Settings → Domains**.
