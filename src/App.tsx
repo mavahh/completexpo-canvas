@@ -36,6 +36,7 @@ import EventRequests from "./pages/EventRequests";
 import PublicRequest from "./pages/PublicRequest";
 import PlaceholderPage from "./pages/PlaceholderPage";
 import Templates from "./pages/Templates";
+import Home from "./pages/Home";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -44,7 +45,7 @@ function AuthRedirect({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
   
   if (loading) return null;
-  if (user) return <Navigate to="/dashboard" replace />;
+  if (user) return <Navigate to="/home" replace />;
   return <>{children}</>;
 }
 
@@ -67,6 +68,7 @@ const App = () => (
 
             {/* Protected routes */}
             <Route element={<ProtectedRoute><DashboardLayout /></ProtectedRoute>}>
+              <Route path="/home" element={<Home />} />
               <Route path="/dashboard" element={<Dashboard />} />
               <Route path="/events" element={<Events />} />
               <Route path="/events/new" element={<EventForm />} />
