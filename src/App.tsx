@@ -16,6 +16,7 @@ import EventDetail from "./pages/EventDetail";
 import Exhibitors from "./pages/Exhibitors";
 import FloorplanEditor from "./pages/FloorplanEditor";
 import Users from "./pages/Users";
+import UserDetail from "./pages/UserDetail";
 import Roles from "./pages/Roles";
 import EventSettings from "./pages/EventSettings";
 import EventUsers from "./pages/EventUsers";
@@ -62,6 +63,7 @@ const App = () => (
               
               {/* System routes */}
               <Route path="/users" element={<Users />} />
+              <Route path="/users/:userId" element={<UserDetail />} />
               <Route path="/roles" element={<Roles />} />
               <Route path="/settings" element={<PlaceholderPage title="Instellingen" />} />
               <Route path="/crm" element={<PlaceholderPage title="CRM" />} />

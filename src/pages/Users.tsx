@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { usePermissions } from '@/hooks/usePermissions';
 import { Button } from '@/components/ui/button';
@@ -215,13 +216,11 @@ export default function Users() {
                     )}
                   </TableCell>
                   <TableCell>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => handleEditRole(user)}
-                    >
-                      Bewerken
-                    </Button>
+                    <Link to={`/users/${user.id}`}>
+                      <Button variant="ghost" size="sm">
+                        Beheren
+                      </Button>
+                    </Link>
                   </TableCell>
                 </TableRow>
               );

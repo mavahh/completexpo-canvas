@@ -1,27 +1,28 @@
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/lib/auth';
-import { usePermissions } from '@/hooks/usePermissions';
+import { usePermissions, GlobalModuleVisibility } from '@/hooks/usePermissions';
 import { Button } from '@/components/ui/button';
 import { LogOut, HelpCircle, Globe } from 'lucide-react';
 
 interface TabConfig {
   label: string;
   path: string;
+  module?: keyof GlobalModuleVisibility;
   permission?: string;
   adminOnly?: boolean;
 }
 
 const mainTabs: TabConfig[] = [
-  { label: 'Dashboard', path: '/dashboard' },
-  { label: 'Evenementen', path: '/events' },
-  { label: 'Gebruikers', path: '/users', permission: 'USERS_MANAGE' },
+  { label: 'Dashboard', path: '/dashboard', module: 'DASHBOARD' },
+  { label: 'Evenementen', path: '/events', module: 'EVENTS' },
+  { label: 'Gebruikers', path: '/users', module: 'USERS', permission: 'USERS_VIEW' },
   { label: 'Rollen', path: '/roles', adminOnly: true },
-  { label: 'CRM', path: '/crm' },
+  { label: 'CRM', path: '/crm', module: 'CRM' },
 ];
 
 export function Header() {
   const { user, signOut } = useAuth();
-  const { hasPermission, isSystemAdmin } = usePermissions();
+  const { hasPermission, isModuleVisible, isSystemAdmin } = usePermissions();
   const location = useLocation();
   const navigate = useNavigate();
 
@@ -85,8 +86,11 @@ export function Header() {
       {/* Tab navigation */}
       <nav className="flex items-center gap-1 px-6">
         {mainTabs.map((tab) => {
-          // Check permissions
+          // Check admin-only first
           if (tab.adminOnly && !isSystemAdmin) return null;
+          // Check module visibility
+          if (tab.module && !isModuleVisible(tab.module)) return null;
+          // Check specific permission
           if (tab.permission && !hasPermission(tab.permission)) return null;
           
           return (

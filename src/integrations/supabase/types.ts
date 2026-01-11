@@ -66,22 +66,28 @@ export type Database = {
           created_at: string
           event_id: string
           id: string
+          permissions_override: Json | null
           role: Database["public"]["Enums"]["event_role"]
           user_id: string
+          visible_tiles: Json | null
         }
         Insert: {
           created_at?: string
           event_id: string
           id?: string
+          permissions_override?: Json | null
           role?: Database["public"]["Enums"]["event_role"]
           user_id: string
+          visible_tiles?: Json | null
         }
         Update: {
           created_at?: string
           event_id?: string
           id?: string
+          permissions_override?: Json | null
           role?: Database["public"]["Enums"]["event_role"]
           user_id?: string
+          visible_tiles?: Json | null
         }
         Relationships: [
           {
@@ -308,6 +314,7 @@ export type Database = {
         Row: {
           created_at: string
           email: string
+          global_module_visibility: Json | null
           id: string
           name: string | null
           updated_at: string
@@ -315,6 +322,7 @@ export type Database = {
         Insert: {
           created_at?: string
           email: string
+          global_module_visibility?: Json | null
           id: string
           name?: string | null
           updated_at?: string
@@ -322,6 +330,7 @@ export type Database = {
         Update: {
           created_at?: string
           email?: string
+          global_module_visibility?: Json | null
           id?: string
           name?: string | null
           updated_at?: string
@@ -619,6 +628,10 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      has_event_permission: {
+        Args: { _event_id: string; _permission_name: string; _user_id: string }
+        Returns: boolean
+      }
       has_permission: {
         Args: { _event_id?: string; _permission_name: string; _user_id: string }
         Returns: boolean
@@ -634,7 +647,15 @@ export type Database = {
         Args: { _event_id: string; _user_id: string }
         Returns: boolean
       }
+      is_module_visible: {
+        Args: { _module_name: string; _user_id: string }
+        Returns: boolean
+      }
       is_system_admin: { Args: { _user_id: string }; Returns: boolean }
+      is_tile_visible: {
+        Args: { _event_id: string; _tile_name: string; _user_id: string }
+        Returns: boolean
+      }
     }
     Enums: {
       document_language: "NL" | "FR" | "EN" | "DE"
