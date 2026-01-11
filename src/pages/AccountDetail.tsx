@@ -32,6 +32,12 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { useToast } from '@/hooks/use-toast';
 import {
   Loader2,
@@ -44,6 +50,9 @@ import {
   Shield,
   Trash2,
   Save,
+  MoreHorizontal,
+  KeyRound,
+  Send,
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { nl } from 'date-fns/locale';
@@ -210,6 +219,27 @@ export default function AccountDetail() {
       });
 
       navigate('/admin/accounts');
+    } catch (error: any) {
+      toast({
+        variant: 'destructive',
+        title: 'Fout',
+        description: error.message,
+      });
+    }
+  };
+
+  const sendPasswordReset = async (email: string) => {
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: `${window.location.origin}/login`,
+      });
+
+      if (error) throw error;
+
+      toast({
+        title: 'Link verstuurd',
+        description: `Wachtwoord reset link verstuurd naar ${email}.`,
+      });
     } catch (error: any) {
       toast({
         variant: 'destructive',
@@ -393,13 +423,27 @@ export default function AccountDetail() {
                         {format(new Date(user.created_at), 'd MMM yyyy', { locale: nl })}
                       </TableCell>
                       <TableCell>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => toggleAdmin(user.id, user.is_account_admin)}
-                        >
-                          {user.is_account_admin ? 'Degraderen' : 'Promoveren'}
-                        </Button>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="icon">
+                              <MoreHorizontal className="w-4 h-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem
+                              onClick={() => toggleAdmin(user.id, user.is_account_admin)}
+                            >
+                              <Shield className="w-4 h-4 mr-2" />
+                              {user.is_account_admin ? 'Degraderen naar gebruiker' : 'Promoveren tot admin'}
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                              onClick={() => sendPasswordReset(user.email)}
+                            >
+                              <KeyRound className="w-4 h-4 mr-2" />
+                              Wachtwoord reset sturen
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
                       </TableCell>
                     </TableRow>
                   ))}
