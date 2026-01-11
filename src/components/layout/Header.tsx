@@ -1,18 +1,27 @@
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/lib/auth';
+import { usePermissions } from '@/hooks/usePermissions';
 import { Button } from '@/components/ui/button';
 import { LogOut, HelpCircle, Globe } from 'lucide-react';
 
-const mainTabs = [
+interface TabConfig {
+  label: string;
+  path: string;
+  permission?: string;
+  adminOnly?: boolean;
+}
+
+const mainTabs: TabConfig[] = [
   { label: 'Dashboard', path: '/dashboard' },
   { label: 'Evenementen', path: '/events' },
-  { label: 'Gebruikers', path: '/users' },
-  { label: 'Instellingen', path: '/settings' },
+  { label: 'Gebruikers', path: '/users', permission: 'USERS_MANAGE' },
+  { label: 'Rollen', path: '/roles', adminOnly: true },
   { label: 'CRM', path: '/crm' },
 ];
 
 export function Header() {
   const { user, signOut } = useAuth();
+  const { hasPermission, isSystemAdmin } = usePermissions();
   const location = useLocation();
   const navigate = useNavigate();
 
@@ -75,15 +84,21 @@ export function Header() {
 
       {/* Tab navigation */}
       <nav className="flex items-center gap-1 px-6">
-        {mainTabs.map((tab) => (
-          <Link
-            key={tab.path}
-            to={tab.path}
-            className={`nav-tab ${isActiveTab(tab.path) ? 'nav-tab-active' : ''}`}
-          >
-            {tab.label}
-          </Link>
-        ))}
+        {mainTabs.map((tab) => {
+          // Check permissions
+          if (tab.adminOnly && !isSystemAdmin) return null;
+          if (tab.permission && !hasPermission(tab.permission)) return null;
+          
+          return (
+            <Link
+              key={tab.path}
+              to={tab.path}
+              className={`nav-tab ${isActiveTab(tab.path) ? 'nav-tab-active' : ''}`}
+            >
+              {tab.label}
+            </Link>
+          );
+        })}
       </nav>
     </header>
   );

@@ -15,6 +15,12 @@ import EventForm from "./pages/EventForm";
 import EventDetail from "./pages/EventDetail";
 import Exhibitors from "./pages/Exhibitors";
 import FloorplanEditor from "./pages/FloorplanEditor";
+import Users from "./pages/Users";
+import Roles from "./pages/Roles";
+import EventSettings from "./pages/EventSettings";
+import EventUsers from "./pages/EventUsers";
+import EventRequests from "./pages/EventRequests";
+import PublicRequest from "./pages/PublicRequest";
 import PlaceholderPage from "./pages/PlaceholderPage";
 import NotFound from "./pages/NotFound";
 
@@ -39,6 +45,7 @@ const App = () => (
             {/* Public routes */}
             <Route path="/" element={<AuthRedirect><Landing /></AuthRedirect>} />
             <Route path="/login" element={<AuthRedirect><Login /></AuthRedirect>} />
+            <Route path="/request/:token" element={<PublicRequest />} />
 
             {/* Protected routes */}
             <Route element={<ProtectedRoute><DashboardLayout /></ProtectedRoute>}>
@@ -49,9 +56,13 @@ const App = () => (
               <Route path="/events/:id/edit" element={<EventForm />} />
               <Route path="/events/:id/exhibitors" element={<Exhibitors />} />
               <Route path="/events/:id/floorplan" element={<FloorplanEditor />} />
+              <Route path="/events/:id/settings" element={<EventSettings />} />
+              <Route path="/events/:id/users" element={<EventUsers />} />
+              <Route path="/events/:id/requests" element={<EventRequests />} />
               
-              {/* Placeholder routes */}
-              <Route path="/users" element={<PlaceholderPage title="Gebruikers" />} />
+              {/* System routes */}
+              <Route path="/users" element={<Users />} />
+              <Route path="/roles" element={<Roles />} />
               <Route path="/settings" element={<PlaceholderPage title="Instellingen" />} />
               <Route path="/crm" element={<PlaceholderPage title="CRM" />} />
             </Route>

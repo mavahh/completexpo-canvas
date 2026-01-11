@@ -94,12 +94,13 @@ export default function EventSettings() {
         .getPublicUrl(filePath);
 
       // Delete existing then insert
+      const langTyped = language as 'NL' | 'FR' | 'EN' | 'DE';
       await supabase
         .from('event_documents')
         .delete()
         .eq('event_id', eventId)
         .eq('type', 'TERMS')
-        .eq('language', language);
+        .eq('language', langTyped);
 
       const { error: dbError } = await supabase
         .from('event_documents')
