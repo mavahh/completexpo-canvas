@@ -78,7 +78,7 @@ export default function FloorplanEditor() {
   return (
     <div 
       ref={editorRef}
-      className={`flex flex-col animate-fade-in ${isFullscreen ? 'fixed inset-0 z-50 bg-background' : 'h-[calc(100vh-120px)]'}`}
+      className={`flex flex-col animate-fade-in ${isFullscreen ? 'fixed inset-0 z-50 bg-background' : 'h-[calc(100vh-80px)] sm:h-[calc(100vh-120px)]'}`}
     >
       <FloorplanEditorToolbar
         eventId={eventId || ''}
@@ -114,8 +114,9 @@ export default function FloorplanEditor() {
       />
 
       <div className="flex flex-1 overflow-hidden">
-        {/* Left sidebar */}
+        {/* Left sidebar - hidden on mobile and tablet, shown on desktop */}
         {!isFullscreen && (
+          <div className="hidden lg:block">
           <FloorplanLeftSidebar
             statusFilters={floorplanData.statusFilters}
             statusCounts={floorplanData.statusCounts}
@@ -130,6 +131,7 @@ export default function FloorplanEditor() {
             onExhibitorSearchChange={floorplanData.setExhibitorSearch}
             onExhibitorSelect={floorplanData.setActiveExhibitorId}
           />
+          </div>
         )}
 
         {/* Canvas */}
@@ -153,8 +155,9 @@ export default function FloorplanEditor() {
           onResizeStart={canvasInteraction.handleResizeStart}
         />
 
-        {/* Right sidebar */}
+        {/* Right sidebar - hidden on mobile, shown on tablet+ */}
         {!isFullscreen && (
+          <div className="hidden md:block">
           <FloorplanRightSidebar
             activeTab={rightPanelTab}
             onTabChange={setRightPanelTab}
@@ -182,6 +185,7 @@ export default function FloorplanEditor() {
             onClampToBounds={canEdit ? floorplanData.handleClampToBounds : undefined}
             getExhibitorName={floorplanData.getExhibitorName}
           />
+          </div>
         )}
       </div>
 

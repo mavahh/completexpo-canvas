@@ -73,9 +73,9 @@ export default function Login() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background p-4">
+    <div className="min-h-screen flex items-center justify-center bg-background p-4 sm:p-6">
       <div className="w-full max-w-md">
-        <div className="bg-card border border-border rounded-xl p-8 shadow-lg animate-fade-in">
+        <div className="bg-card border border-border rounded-xl p-6 sm:p-8 shadow-lg animate-fade-in">
           <div className="text-center mb-8">
             <div className="w-12 h-12 bg-primary rounded-xl flex items-center justify-center mx-auto mb-4">
               <span className="text-primary-foreground font-bold text-xl">C</span>

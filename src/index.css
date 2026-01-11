@@ -176,11 +176,21 @@
   .floorplan-stand {
     @apply absolute cursor-move rounded-sm border-2 border-transparent
            flex items-center justify-center text-xs font-medium
-           transition-colors select-none;
+           transition-colors select-none touch-none;
   }
 
   .floorplan-stand-selected {
     @apply border-primary ring-2 ring-primary/20;
+  }
+
+  /* Touch-friendly tap targets */
+  @media (pointer: coarse) {
+    button, 
+    [role="button"],
+    .tile-card {
+      min-height: 44px;
+      min-width: 44px;
+    }
   }
 }
 

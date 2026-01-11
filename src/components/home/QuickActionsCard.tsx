@@ -19,13 +19,13 @@ export function QuickActionsCard({ eventId }: QuickActionsCardProps) {
 
   return (
     <Card className="bg-card border-border">
-      <CardHeader className="pb-3">
-        <CardTitle className="flex items-center gap-2 text-base font-medium">
+      <CardHeader className="p-4 sm:pb-3">
+        <CardTitle className="flex items-center gap-2 text-sm sm:text-base font-medium">
           <Zap className="w-4 h-4 text-primary" />
           Snelle acties
         </CardTitle>
       </CardHeader>
-      <CardContent className="flex flex-wrap gap-2">
+      <CardContent className="p-4 pt-0 sm:pt-0 flex flex-wrap gap-2">
         {QUICK_ACTIONS.map((action) => {
           const Icon = action.icon;
           const needsEvent = action.requiresEvent && !eventId;

@@ -62,19 +62,19 @@ export function FloorplanRightSidebar({
   getExhibitorName,
 }: FloorplanRightSidebarProps) {
   return (
-    <div className="w-72 bg-card border-l border-border overflow-y-auto">
+    <div className="w-64 xl:w-72 bg-card border-l border-border overflow-y-auto">
       <Tabs value={activeTab} onValueChange={onTabChange} className="h-full flex flex-col">
-        <TabsList className="w-full rounded-none border-b border-border">
-          <TabsTrigger value="properties" className="flex-1">Eigenschappen</TabsTrigger>
-          <TabsTrigger value="warnings" className="flex-1 relative">
-            Warnings
+        <TabsList className="w-full rounded-none border-b border-border h-auto p-0">
+          <TabsTrigger value="properties" className="flex-1 py-2 text-xs sm:text-sm">Props</TabsTrigger>
+          <TabsTrigger value="warnings" className="flex-1 relative py-2 text-xs sm:text-sm">
+            Warn
             {warnings.length > 0 && (
               <span className="absolute -top-1 -right-1 w-4 h-4 bg-warning text-warning-foreground text-[10px] rounded-full flex items-center justify-center">
                 {warnings.length}
               </span>
             )}
           </TabsTrigger>
-          <TabsTrigger value="log" className="flex-1">Log</TabsTrigger>
+          <TabsTrigger value="log" className="flex-1 py-2 text-xs sm:text-sm">Log</TabsTrigger>
         </TabsList>
         
         <TabsContent value="properties" className="flex-1 p-4 m-0 overflow-y-auto">

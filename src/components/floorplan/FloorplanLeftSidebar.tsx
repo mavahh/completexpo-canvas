@@ -33,7 +33,7 @@ export function FloorplanLeftSidebar({
   );
 
   return (
-    <div className="w-64 bg-card border-r border-border p-4 overflow-y-auto space-y-4">
+    <div className="w-56 xl:w-64 bg-card border-r border-border p-3 xl:p-4 overflow-y-auto space-y-4">
       <StandLegend 
         filters={statusFilters} 
         onFilterChange={onFilterChange}
