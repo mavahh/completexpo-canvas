@@ -10,6 +10,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useEventRole } from '@/hooks/useEventRole';
 import { useDarkMode } from '@/hooks/useDarkMode';
 import { useAuditLog } from '@/hooks/useAuditLog';
+import { useFullscreen } from '@/hooks/useFullscreen';
 import { BackgroundUpload } from '@/components/floorplan/BackgroundUpload';
 import { HallSelector } from '@/components/floorplan/HallSelector';
 import { StandServiceIcons } from '@/components/floorplan/StandServiceIcons';
@@ -17,10 +18,11 @@ import { ExhibitorServicesPanel } from '@/components/floorplan/ExhibitorServices
 import { StandLegend, STAND_STATUS_CONFIG, StandStatus } from '@/components/floorplan/StandLegend';
 import { StandStatusSelect } from '@/components/floorplan/StandStatusSelect';
 import { BulkActionsPanel } from '@/components/floorplan/BulkActionsPanel';
-import { AutoLabelingModal, LabelingConfig } from '@/components/floorplan/AutoLabelingModal';
-import { WarningsPanel, FloorplanWarning } from '@/components/floorplan/WarningsPanel';
-import { AuditLogPanel } from '@/components/floorplan/AuditLogPanel';
-import { ExportDialog, ExportOptions } from '@/components/floorplan/ExportDialog';
+import { LabelingModalEnhanced, LabelingConfigEnhanced, LabelingResult } from '@/components/floorplan/LabelingModalEnhanced';
+import { WarningsPanelEnhanced, FloorplanWarning } from '@/components/floorplan/WarningsPanelEnhanced';
+import { AuditLogPanelEnhanced } from '@/components/floorplan/AuditLogPanelEnhanced';
+import { ExportDialogEnhanced, ExportOptionsEnhanced } from '@/components/floorplan/ExportDialogEnhanced';
+import { SaveAsTemplateDialog } from '@/components/floorplan/SaveAsTemplateDialog';
 import {
   Select,
   SelectContent,
@@ -31,8 +33,10 @@ import {
 import { 
   ArrowLeft, Plus, Save, ZoomIn, ZoomOut, Grid3X3, Loader2,
   Search, Trash2, RotateCcw, Check, Moon, Sun, Lock,
-  Tag, Download, AlertTriangle
+  Tag, Download, AlertTriangle, Maximize2, Minimize2, Crosshair,
+  Layout
 } from 'lucide-react';
+import { jsPDF } from 'jspdf';
 
 interface Stand {
   id: string;
@@ -84,7 +88,10 @@ export default function FloorplanEditor() {
   const { canEdit, isReadOnly, loading: roleLoading } = useEventRole(eventId);
   const { isDark, toggle: toggleDarkMode } = useDarkMode();
   const { log: auditLog } = useAuditLog();
+  const editorRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLDivElement>(null);
+  const canvasContainerRef = useRef<HTMLDivElement>(null);
+  const { isFullscreen, toggleFullscreen } = useFullscreen(editorRef);
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -99,6 +106,7 @@ export default function FloorplanEditor() {
   const [exhibitorSearch, setExhibitorSearch] = useState('');
   const [zoom, setZoom] = useState(1);
   const [showGrid, setShowGrid] = useState(true);
+  const [snapToGridEnabled, setSnapToGridEnabled] = useState(true);
   const [pan, setPan] = useState({ x: 0, y: 0 });
   const [isPanning, setIsPanning] = useState(false);
   const [panStart, setPanStart] = useState({ x: 0, y: 0 });
@@ -114,8 +122,13 @@ export default function FloorplanEditor() {
   });
   const [showLabelingModal, setShowLabelingModal] = useState(false);
   const [showExportDialog, setShowExportDialog] = useState(false);
+  const [showTemplateDialog, setShowTemplateDialog] = useState(false);
   const [eventName, setEventName] = useState('');
   const [rightPanelTab, setRightPanelTab] = useState('properties');
+  const [spacePressed, setSpacePressed] = useState(false);
+
+  // Debounced save timeout
+  const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   const floorplan = floorplans.find((fp) => fp.id === selectedFloorplanId);
   const selectedStand = selectedStandIds.size === 1 
@@ -180,6 +193,18 @@ export default function FloorplanEditor() {
     });
   }
 
+  // Check for missing labels
+  stands.forEach(s => {
+    if (!s.label || s.label.trim() === '') {
+      warnings.push({
+        type: 'missing-label',
+        standId: s.id,
+        standLabel: '(leeg)',
+        message: 'Ontbrekend label',
+      });
+    }
+  });
+
   // Status counts for legend
   const statusCounts: Record<StandStatus, number> = {
     AVAILABLE: stands.filter(s => s.status === 'AVAILABLE').length,
@@ -187,6 +212,59 @@ export default function FloorplanEditor() {
     SOLD: stands.filter(s => s.status === 'SOLD').length,
     BLOCKED: stands.filter(s => s.status === 'BLOCKED').length,
   };
+
+  // Keyboard event handlers
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Space for panning
+      if (e.code === 'Space' && !e.repeat) {
+        e.preventDefault();
+        setSpacePressed(true);
+      }
+      // Escape clears selection
+      if (e.code === 'Escape') {
+        setSelectedStandIds(new Set());
+      }
+      // Delete selected stands
+      if ((e.code === 'Delete' || e.code === 'Backspace') && selectedStandIds.size > 0 && canEdit) {
+        const target = e.target as HTMLElement;
+        if (target.tagName !== 'INPUT' && target.tagName !== 'TEXTAREA') {
+          e.preventDefault();
+          deleteStand();
+        }
+      }
+    };
+
+    const handleKeyUp = (e: KeyboardEvent) => {
+      if (e.code === 'Space') {
+        setSpacePressed(false);
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    window.addEventListener('keyup', handleKeyUp);
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+      window.removeEventListener('keyup', handleKeyUp);
+    };
+  }, [selectedStandIds, canEdit]);
+
+  // Mouse wheel zoom
+  useEffect(() => {
+    const container = canvasContainerRef.current;
+    if (!container) return;
+
+    const handleWheel = (e: WheelEvent) => {
+      if (e.ctrlKey || e.metaKey) {
+        e.preventDefault();
+        const delta = e.deltaY > 0 ? -0.1 : 0.1;
+        setZoom(prev => Math.max(0.1, Math.min(3, prev + delta)));
+      }
+    };
+
+    container.addEventListener('wheel', handleWheel, { passive: false });
+    return () => container.removeEventListener('wheel', handleWheel);
+  }, []);
 
   useEffect(() => {
     fetchData();
@@ -283,9 +361,28 @@ export default function FloorplanEditor() {
   }, [selectedFloorplanId]);
 
   const snapToGrid = (value: number) => {
-    if (!floorplan) return value;
+    if (!floorplan || !snapToGridEnabled) return value;
     return Math.round(value / floorplan.grid_size) * floorplan.grid_size;
   };
+
+  // Fit to screen function
+  const fitToScreen = useCallback(() => {
+    if (!floorplan || !canvasContainerRef.current) return;
+    
+    const container = canvasContainerRef.current;
+    const containerWidth = container.clientWidth - 40;
+    const containerHeight = container.clientHeight - 40;
+    
+    const scaleX = containerWidth / floorplan.width;
+    const scaleY = containerHeight / floorplan.height;
+    const newZoom = Math.min(scaleX, scaleY, 1);
+    
+    setZoom(newZoom);
+    setPan({
+      x: (containerWidth - floorplan.width * newZoom) / 2,
+      y: (containerHeight - floorplan.height * newZoom) / 2,
+    });
+  }, [floorplan]);
 
   const addStand = async () => {
     if (!floorplan || !eventId || !canEdit) return;
@@ -351,6 +448,14 @@ export default function FloorplanEditor() {
     updatedStands[standIndex] = { ...oldStand, ...updates };
     setStands(updatedStands);
     setDirty(true);
+
+    // Debounced save
+    if (saveTimeoutRef.current) {
+      clearTimeout(saveTimeoutRef.current);
+    }
+    saveTimeoutRef.current = setTimeout(() => {
+      // Auto-save triggered after 800ms of inactivity
+    }, 800);
   };
 
   const updateStandWithAutoStatus = (id: string, updates: Partial<Stand>) => {
@@ -429,7 +534,7 @@ export default function FloorplanEditor() {
   };
 
   const handleMouseDown = (e: React.MouseEvent, standId?: string) => {
-    if (standId) {
+    if (standId && !spacePressed) {
       e.stopPropagation();
       const stand = stands.find((s) => s.id === standId);
       if (!stand) return;
@@ -459,10 +564,10 @@ export default function FloorplanEditor() {
           });
         }
       }
-    } else if (e.target === canvasRef.current || (e.target as HTMLElement).classList.contains('canvas-bg')) {
+    } else if (e.target === canvasRef.current || (e.target as HTMLElement).classList.contains('canvas-bg') || spacePressed) {
       setIsPanning(true);
       setPanStart({ x: e.clientX - pan.x, y: e.clientY - pan.y });
-      if (!e.shiftKey) {
+      if (!e.shiftKey && !spacePressed) {
         setSelectedStandIds(new Set());
       }
     }
@@ -472,7 +577,7 @@ export default function FloorplanEditor() {
     const rect = canvasRef.current?.getBoundingClientRect();
     if (!rect) return;
 
-    if (dragging && canEdit) {
+    if (dragging && canEdit && !spacePressed) {
       const stand = stands.find((s) => s.id === dragging);
       if (!stand) return;
 
@@ -516,7 +621,7 @@ export default function FloorplanEditor() {
         y: e.clientY - panStart.y,
       });
     }
-  }, [dragging, resizing, isPanning, stands, dragOffset, resizeStart, panStart, zoom, canEdit]);
+  }, [dragging, resizing, isPanning, stands, dragOffset, resizeStart, panStart, zoom, canEdit, spacePressed, snapToGridEnabled]);
 
   const handleMouseUp = () => {
     setDragging(null);
@@ -581,12 +686,13 @@ export default function FloorplanEditor() {
   const handleBulkSnapToGrid = () => {
     selectedStandIds.forEach(id => {
       const stand = stands.find(s => s.id === id);
-      if (stand) {
+      if (stand && floorplan) {
+        const gridSize = floorplan.grid_size;
         updateStand(id, {
-          x: snapToGrid(stand.x),
-          y: snapToGrid(stand.y),
-          width: snapToGrid(stand.width),
-          height: snapToGrid(stand.height),
+          x: Math.round(stand.x / gridSize) * gridSize,
+          y: Math.round(stand.y / gridSize) * gridSize,
+          width: Math.round(stand.width / gridSize) * gridSize,
+          height: Math.round(stand.height / gridSize) * gridSize,
         });
       }
     });
@@ -602,43 +708,70 @@ export default function FloorplanEditor() {
     selectedStandIds.forEach(id => {
       const stand = stands.find(s => s.id === id);
       if (stand) {
-        updateStand(id, { rotation: (stand.rotation + degrees) % 360 });
+        updateStand(id, { rotation: (stand.rotation + degrees + 360) % 360 });
       }
     });
   };
 
   const handleExportLabels = () => {
     const selectedStands = stands.filter(s => selectedStandIds.has(s.id));
-    const csv = ['Label,Status,Exhibitor'];
+    const csv = ['Label,X,Y,Width,Height,Rotation,Status,Exhibitor,Hall'];
     selectedStands.forEach(s => {
       const exhibitorName = exhibitors.find(e => e.id === s.exhibitor_id)?.name || '';
-      csv.push(`${s.label},${s.status},${exhibitorName}`);
+      csv.push(`${s.label},${s.x},${s.y},${s.width},${s.height},${s.rotation},${s.status},"${exhibitorName}","${floorplan?.name || ''}"`);
     });
     const blob = new Blob([csv.join('\n')], { type: 'text/csv' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = 'stands-export.csv';
+    a.download = `stands-export-${new Date().toISOString().slice(0,10)}.csv`;
     a.click();
   };
 
-  // Auto labeling
-  const handleApplyLabels = (config: LabelingConfig) => {
-    if (!eventId) return;
+  // Enhanced auto labeling
+  const handleApplyLabels = (config: LabelingConfigEnhanced): LabelingResult => {
+    if (!eventId) return { assigned: 0, skipped: 0, duplicatesResolved: 0 };
+    
     const targetStands = config.applyToSelected 
       ? stands.filter(s => selectedStandIds.has(s.id))
       : [...stands];
     
-    // Sort by position (y then x)
+    // Sort by position (y then x) for deterministic order
     targetStands.sort((a, b) => {
       if (Math.abs(a.y - b.y) < 20) return a.x - b.x;
       return a.y - b.y;
     });
 
+    const existingLabels = new Set(stands.map(s => s.label));
+    let assigned = 0;
+    let skipped = 0;
+    let duplicatesResolved = 0;
+
     targetStands.forEach((stand, index) => {
-      const num = config.startNumber + index;
-      const label = `${config.prefix}${num.toString().padStart(config.padding, '0')}`;
-      updateStand(stand.id, { label });
+      let num = config.startNumber + index;
+      let label = config.mode === 'prefix' 
+        ? `${config.prefix}${num.toString().padStart(config.padding, '0')}`
+        : num.toString().padStart(config.padding, '0');
+
+      // Handle collisions
+      if (config.skipDuplicates && existingLabels.has(label)) {
+        // Find next available
+        while (existingLabels.has(label)) {
+          num++;
+          label = config.mode === 'prefix' 
+            ? `${config.prefix}${num.toString().padStart(config.padding, '0')}`
+            : num.toString().padStart(config.padding, '0');
+          duplicatesResolved++;
+        }
+      }
+
+      if (!existingLabels.has(label) || !config.skipDuplicates) {
+        updateStand(stand.id, { label });
+        existingLabels.add(label);
+        assigned++;
+      } else {
+        skipped++;
+      }
     });
 
     setDirty(true);
@@ -648,8 +781,10 @@ export default function FloorplanEditor() {
       floorplan_id: selectedFloorplanId || undefined,
       action: 'stand.labels_generated',
       entity_type: 'stand',
-      diff: { prefix: config.prefix, count: targetStands.length },
+      diff: { prefix: config.prefix, count: assigned, mode: config.mode },
     });
+
+    return { assigned, skipped, duplicatesResolved };
   };
 
   // Fix warnings
@@ -674,39 +809,92 @@ export default function FloorplanEditor() {
 
     updates.forEach(({ id, label }) => updateStand(id, { label }));
     setDirty(true);
+    toast({ title: 'Duplicaten opgelost', description: `${updates.length} labels aangepast` });
   };
 
   const handleClampToBounds = () => {
     if (!floorplan) return;
+    let fixed = 0;
     stands.forEach(stand => {
       const clampedX = Math.max(0, Math.min(stand.x, floorplan.width - stand.width));
       const clampedY = Math.max(0, Math.min(stand.y, floorplan.height - stand.height));
       if (clampedX !== stand.x || clampedY !== stand.y) {
         updateStand(stand.id, { x: clampedX, y: clampedY });
+        fixed++;
       }
     });
     setDirty(true);
+    toast({ title: 'Posities gecorrigeerd', description: `${fixed} stands verplaatst` });
   };
 
-  // Export
-  const handleExport = async (options: ExportOptions) => {
-    // Simple PNG export using canvas
+  // Enhanced export with PNG and PDF
+  const handleExport = async (options: ExportOptionsEnhanced) => {
     if (!canvasRef.current) return;
     
     try {
+      // Temporarily hide grid if requested
+      const originalShowGrid = showGrid;
+      if (options.hideGrid) {
+        setShowGrid(false);
+        await new Promise(r => setTimeout(r, 100));
+      }
+
       const { default: html2canvas } = await import('html2canvas');
       const canvas = await html2canvas(canvasRef.current, {
         backgroundColor: isDark ? '#1a1a1a' : '#ffffff',
-        scale: 2,
+        scale: options.scale,
       });
+
+      if (options.hideGrid) {
+        setShowGrid(originalShowGrid);
+      }
       
-      const link = document.createElement('a');
-      link.download = `${eventName}-${floorplan?.name || 'floorplan'}.png`;
-      link.href = canvas.toDataURL('image/png');
-      link.click();
+      const filename = `${eventName}-${floorplan?.name || 'floorplan'}`;
+      const date = new Date().toLocaleDateString('nl-NL');
+
+      if (options.format === 'pdf') {
+        const imgData = canvas.toDataURL('image/png');
+        const pdf = new jsPDF({
+          orientation: canvas.width > canvas.height ? 'landscape' : 'portrait',
+          unit: 'px',
+          format: [canvas.width, canvas.height + (options.includeTitle ? 60 : 0) + (options.includeLegend ? 80 : 0)],
+        });
+
+        let yOffset = 0;
+
+        if (options.includeTitle) {
+          pdf.setFontSize(24);
+          pdf.text(`${eventName} - ${floorplan?.name}`, 20, 35);
+          pdf.setFontSize(12);
+          pdf.text(date, 20, 50);
+          yOffset = 60;
+        }
+
+        pdf.addImage(imgData, 'PNG', 0, yOffset, canvas.width, canvas.height);
+
+        if (options.includeLegend) {
+          const legendY = yOffset + canvas.height + 20;
+          pdf.setFontSize(10);
+          const statuses: StandStatus[] = ['AVAILABLE', 'RESERVED', 'SOLD', 'BLOCKED'];
+          statuses.forEach((status, i) => {
+            const config = STAND_STATUS_CONFIG[status];
+            pdf.setFillColor(config.color);
+            pdf.rect(20 + i * 120, legendY, 15, 15, 'F');
+            pdf.text(`${config.label} (${statusCounts[status]})`, 40 + i * 120, legendY + 12);
+          });
+        }
+
+        pdf.save(`${filename}.pdf`);
+      } else {
+        const link = document.createElement('a');
+        link.download = `${filename}.png`;
+        link.href = canvas.toDataURL('image/png');
+        link.click();
+      }
       
-      toast({ title: 'Geëxporteerd', description: 'Plattegrond is gedownload' });
+      toast({ title: 'Geëxporteerd', description: `${options.format.toUpperCase()} gedownload` });
     } catch (error) {
+      console.error('Export error:', error);
       toast({ variant: 'destructive', title: 'Export mislukt', description: 'Kon plattegrond niet exporteren' });
     }
   };
@@ -731,15 +919,18 @@ export default function FloorplanEditor() {
   }
 
   return (
-    <div className="h-[calc(100vh-120px)] flex flex-col animate-fade-in">
+    <div 
+      ref={editorRef}
+      className={`flex flex-col animate-fade-in ${isFullscreen ? 'fixed inset-0 z-50 bg-background' : 'h-[calc(100vh-120px)]'}`}
+    >
       {/* Toolbar */}
-      <div className="flex items-center justify-between bg-card border-b border-border p-3 rounded-t-lg">
-        <div className="flex items-center gap-2">
+      <div className={`flex items-center justify-between bg-card border-b border-border p-2 ${isFullscreen ? 'px-4' : 'rounded-t-lg p-3'}`}>
+        <div className="flex items-center gap-1">
           <Button variant="ghost" size="sm" onClick={() => navigate(`/events/${eventId}`)}>
-            <ArrowLeft className="w-4 h-4 mr-1" />
-            Terug
+            <ArrowLeft className="w-4 h-4" />
+            {!isFullscreen && <span className="ml-1">Terug</span>}
           </Button>
-          <div className="w-px h-6 bg-border mx-2" />
+          <div className="w-px h-5 bg-border mx-1" />
           
           <HallSelector
             eventId={eventId || ''}
@@ -750,36 +941,57 @@ export default function FloorplanEditor() {
             disabled={!canEdit}
           />
           
-          <div className="w-px h-6 bg-border mx-2" />
+          <div className="w-px h-5 bg-border mx-1" />
           
-          <Button variant="outline" size="sm" onClick={() => setZoom(Math.min(2, zoom + 0.1))}>
+          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setZoom(Math.min(3, zoom + 0.1))}>
             <ZoomIn className="w-4 h-4" />
           </Button>
-          <span className="text-sm text-muted-foreground w-14 text-center">
+          <span className="text-xs text-muted-foreground w-12 text-center font-mono">
             {Math.round(zoom * 100)}%
           </span>
-          <Button variant="outline" size="sm" onClick={() => setZoom(Math.max(0.25, zoom - 0.1))}>
+          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setZoom(Math.max(0.1, zoom - 0.1))}>
             <ZoomOut className="w-4 h-4" />
           </Button>
-          <Button variant="outline" size="sm" onClick={() => { setZoom(1); setPan({ x: 0, y: 0 }); }}>
+          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => { setZoom(1); setPan({ x: 0, y: 0 }); }} title="Reset (100%)">
             <RotateCcw className="w-4 h-4" />
           </Button>
+          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={fitToScreen} title="Fit to screen">
+            <Crosshair className="w-4 h-4" />
+          </Button>
           
-          <div className="w-px h-6 bg-border mx-2" />
+          <div className="w-px h-5 bg-border mx-1" />
           
           <Button
-            variant={showGrid ? 'secondary' : 'outline'}
-            size="sm"
+            variant={showGrid ? 'secondary' : 'ghost'}
+            size="icon"
+            className="h-8 w-8"
             onClick={() => setShowGrid(!showGrid)}
+            title="Toggle grid"
           >
             <Grid3X3 className="w-4 h-4" />
           </Button>
           
-          <Button variant="outline" size="sm" onClick={toggleDarkMode}>
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            className="h-8 w-8" 
+            onClick={toggleDarkMode}
+            title={isDark ? 'Light mode' : 'Dark mode'}
+          >
             {isDark ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
           </Button>
+
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-8 w-8"
+            onClick={toggleFullscreen}
+            title={isFullscreen ? 'Exit fullscreen (F)' : 'Fullscreen (F)'}
+          >
+            {isFullscreen ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
+          </Button>
           
-          {floorplan && (
+          {floorplan && !isFullscreen && (
             <BackgroundUpload
               floorplanId={floorplan.id}
               currentBackground={floorplan.background_url}
@@ -789,52 +1001,59 @@ export default function FloorplanEditor() {
             />
           )}
           
-          <div className="w-px h-6 bg-border mx-2" />
+          <div className="w-px h-5 bg-border mx-1" />
           
+          <Button variant="ghost" size="sm" onClick={() => setShowLabelingModal(true)}>
+            <Tag className="w-4 h-4" />
+            {!isFullscreen && <span className="ml-1">Labels</span>}
+          </Button>
+          <Button variant="ghost" size="sm" onClick={() => setShowExportDialog(true)}>
+            <Download className="w-4 h-4" />
+            {!isFullscreen && <span className="ml-1">Export</span>}
+          </Button>
           {canEdit && (
-            <>
-              <Button variant="outline" size="sm" onClick={() => setShowLabelingModal(true)}>
-                <Tag className="w-4 h-4 mr-1" />
-                Labels
-              </Button>
-              <Button variant="outline" size="sm" onClick={() => setShowExportDialog(true)}>
-                <Download className="w-4 h-4 mr-1" />
-                Export
-              </Button>
-            </>
+            <Button variant="ghost" size="sm" onClick={() => setShowTemplateDialog(true)}>
+              <Layout className="w-4 h-4" />
+              {!isFullscreen && <span className="ml-1">Template</span>}
+            </Button>
           )}
         </div>
         
         <div className="flex items-center gap-2">
           {isReadOnly && (
-            <div className="flex items-center gap-1 text-sm text-muted-foreground bg-muted px-3 py-1.5 rounded-md">
+            <div className="flex items-center gap-1 text-xs text-muted-foreground bg-muted px-2 py-1 rounded">
               <Lock className="w-3 h-3" />
               Alleen lezen
             </div>
           )}
           
           {warnings.length > 0 && (
-            <div className="flex items-center gap-1 text-sm text-warning bg-warning/10 px-3 py-1.5 rounded-md">
-              <AlertTriangle className="w-3 h-3" />
-              {warnings.length} waarschuwing{warnings.length !== 1 ? 'en' : ''}
-            </div>
+            <Button 
+              variant="ghost" 
+              size="sm"
+              className="text-warning"
+              onClick={() => setRightPanelTab('warnings')}
+            >
+              <AlertTriangle className="w-4 h-4 mr-1" />
+              {warnings.length}
+            </Button>
           )}
           
           {canEdit && (
             <>
               <Button variant="outline" size="sm" onClick={addStand}>
-                <Plus className="w-4 h-4 mr-1" />
-                Stand toevoegen
+                <Plus className="w-4 h-4" />
+                {!isFullscreen && <span className="ml-1">Stand</span>}
               </Button>
               <Button size="sm" onClick={saveAll} disabled={saving || !dirty}>
                 {saving ? (
-                  <Loader2 className="w-4 h-4 mr-1 animate-spin" />
+                  <Loader2 className="w-4 h-4 animate-spin" />
                 ) : dirty ? (
-                  <Save className="w-4 h-4 mr-1" />
+                  <Save className="w-4 h-4" />
                 ) : (
-                  <Check className="w-4 h-4 mr-1" />
+                  <Check className="w-4 h-4" />
                 )}
-                {dirty ? 'Opslaan' : 'Opgeslagen'}
+                {!isFullscreen && <span className="ml-1">{dirty ? 'Opslaan' : 'Opgeslagen'}</span>}
               </Button>
             </>
           )}
@@ -842,63 +1061,66 @@ export default function FloorplanEditor() {
       </div>
 
       <div className="flex flex-1 overflow-hidden">
-        {/* Left sidebar - Exhibitors + Legend */}
-        <div className="w-64 bg-card border-r border-border p-4 overflow-y-auto space-y-4">
-          <StandLegend 
-            filters={statusFilters} 
-            onFilterChange={(status, checked) => 
-              setStatusFilters(prev => ({ ...prev, [status]: checked }))
-            }
-            counts={statusCounts}
-          />
-          
-          <div>
-            <h3 className="font-medium text-foreground mb-3">Exposanten</h3>
-            <div className="relative mb-3">
-              <Search className="absolute left-2 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-              <Input
-                placeholder="Zoeken..."
-                value={exhibitorSearch}
-                onChange={(e) => setExhibitorSearch(e.target.value)}
-                className="pl-8 h-9"
-              />
-            </div>
-            <div className="space-y-1 max-h-64 overflow-y-auto">
-              {filteredExhibitors.map((ex) => {
-                const hasStand = stands.some((s) => s.exhibitor_id === ex.id);
-                return (
-                  <button
-                    key={ex.id}
-                    onClick={() => canEdit && setActiveExhibitorId(activeExhibitorId === ex.id ? null : ex.id)}
-                    disabled={!canEdit}
-                    className={`w-full text-left px-3 py-2 rounded-md text-sm transition-colors ${
-                      activeExhibitorId === ex.id
-                        ? 'bg-primary text-primary-foreground'
-                        : hasStand
-                        ? 'bg-success/10 text-success hover:bg-success/20'
-                        : canEdit
-                        ? 'hover:bg-secondary text-foreground'
-                        : 'text-muted-foreground cursor-default'
-                    }`}
-                  >
-                    <div className="flex items-center justify-between">
-                      <span className="truncate">{ex.name}</span>
-                      {hasStand && <Check className="w-3 h-3 flex-shrink-0" />}
-                    </div>
-                  </button>
-                );
-              })}
-              {filteredExhibitors.length === 0 && (
-                <p className="text-sm text-muted-foreground text-center py-4">
-                  Geen exposanten gevonden
-                </p>
-              )}
+        {/* Left sidebar - Exhibitors + Legend (hidden in fullscreen) */}
+        {!isFullscreen && (
+          <div className="w-64 bg-card border-r border-border p-4 overflow-y-auto space-y-4">
+            <StandLegend 
+              filters={statusFilters} 
+              onFilterChange={(status, checked) => 
+                setStatusFilters(prev => ({ ...prev, [status]: checked }))
+              }
+              counts={statusCounts}
+            />
+            
+            <div>
+              <h3 className="font-medium text-foreground mb-3">Exposanten</h3>
+              <div className="relative mb-3">
+                <Search className="absolute left-2 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                <Input
+                  placeholder="Zoeken..."
+                  value={exhibitorSearch}
+                  onChange={(e) => setExhibitorSearch(e.target.value)}
+                  className="pl-8 h-9"
+                />
+              </div>
+              <div className="space-y-1 max-h-64 overflow-y-auto">
+                {filteredExhibitors.map((ex) => {
+                  const hasStand = stands.some((s) => s.exhibitor_id === ex.id);
+                  return (
+                    <button
+                      key={ex.id}
+                      onClick={() => canEdit && setActiveExhibitorId(activeExhibitorId === ex.id ? null : ex.id)}
+                      disabled={!canEdit}
+                      className={`w-full text-left px-3 py-2 rounded-md text-sm transition-colors ${
+                        activeExhibitorId === ex.id
+                          ? 'bg-primary text-primary-foreground'
+                          : hasStand
+                          ? 'bg-success/10 text-success hover:bg-success/20'
+                          : canEdit
+                          ? 'hover:bg-secondary text-foreground'
+                          : 'text-muted-foreground cursor-default'
+                      }`}
+                    >
+                      <div className="flex items-center justify-between">
+                        <span className="truncate">{ex.name}</span>
+                        {hasStand && <Check className="w-3 h-3 flex-shrink-0" />}
+                      </div>
+                    </button>
+                  );
+                })}
+                {filteredExhibitors.length === 0 && (
+                  <p className="text-sm text-muted-foreground text-center py-4">
+                    Geen exposanten gevonden
+                  </p>
+                )}
+              </div>
             </div>
           </div>
-        </div>
+        )}
 
         {/* Canvas */}
         <div
+          ref={canvasContainerRef}
           className="flex-1 overflow-hidden bg-muted relative"
           onMouseMove={handleMouseMove}
           onMouseUp={handleMouseUp}
@@ -912,7 +1134,7 @@ export default function FloorplanEditor() {
               height: floorplan?.height || 800,
               transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoom})`,
               transformOrigin: '0 0',
-              cursor: isPanning ? 'grabbing' : 'grab',
+              cursor: spacePressed || isPanning ? 'grabbing' : 'grab',
             }}
             onMouseDown={(e) => handleMouseDown(e)}
           >
@@ -955,7 +1177,7 @@ export default function FloorplanEditor() {
                     backgroundColor: statusColor,
                     transform: `rotate(${stand.rotation}deg)`,
                     zIndex: isSelected ? 10 : 1,
-                    cursor: canEdit ? 'move' : 'pointer',
+                    cursor: spacePressed ? 'grab' : canEdit ? 'move' : 'pointer',
                   }}
                   onMouseDown={(e) => handleMouseDown(e, stand.id)}
                 >
@@ -994,6 +1216,26 @@ export default function FloorplanEditor() {
                         style={{ bottom: -6, right: -6 }}
                         onMouseDown={(e) => handleResizeStart(e, stand.id, 'se')}
                       />
+                      <div
+                        className="absolute w-3 h-3 bg-primary border border-primary-foreground rounded-full cursor-n-resize"
+                        style={{ top: -6, left: '50%', marginLeft: -6 }}
+                        onMouseDown={(e) => handleResizeStart(e, stand.id, 'n')}
+                      />
+                      <div
+                        className="absolute w-3 h-3 bg-primary border border-primary-foreground rounded-full cursor-s-resize"
+                        style={{ bottom: -6, left: '50%', marginLeft: -6 }}
+                        onMouseDown={(e) => handleResizeStart(e, stand.id, 's')}
+                      />
+                      <div
+                        className="absolute w-3 h-3 bg-primary border border-primary-foreground rounded-full cursor-e-resize"
+                        style={{ right: -6, top: '50%', marginTop: -6 }}
+                        onMouseDown={(e) => handleResizeStart(e, stand.id, 'e')}
+                      />
+                      <div
+                        className="absolute w-3 h-3 bg-primary border border-primary-foreground rounded-full cursor-w-resize"
+                        style={{ left: -6, top: '50%', marginTop: -6 }}
+                        onMouseDown={(e) => handleResizeStart(e, stand.id, 'w')}
+                      />
                     </>
                   )}
                 </div>
@@ -1002,222 +1244,238 @@ export default function FloorplanEditor() {
           </div>
         </div>
 
-        {/* Right sidebar - Properties / Warnings / Log */}
-        <div className="w-72 bg-card border-l border-border overflow-y-auto">
-          <Tabs value={rightPanelTab} onValueChange={setRightPanelTab} className="h-full flex flex-col">
-            <TabsList className="w-full rounded-none border-b border-border">
-              <TabsTrigger value="properties" className="flex-1">Eigenschappen</TabsTrigger>
-              <TabsTrigger value="warnings" className="flex-1 relative">
-                Warnings
-                {warnings.length > 0 && (
-                  <span className="absolute -top-1 -right-1 w-4 h-4 bg-warning text-warning-foreground text-[10px] rounded-full flex items-center justify-center">
-                    {warnings.length}
-                  </span>
-                )}
-              </TabsTrigger>
-              <TabsTrigger value="log" className="flex-1">Log</TabsTrigger>
-            </TabsList>
-            
-            <TabsContent value="properties" className="flex-1 p-4 m-0 overflow-y-auto">
-              {selectedStandIds.size > 1 ? (
-                <BulkActionsPanel
-                  selectedCount={selectedStandIds.size}
-                  onSetStatus={handleBulkSetStatus}
-                  onSnapToGrid={handleBulkSnapToGrid}
-                  onClearExhibitor={handleBulkClearExhibitor}
-                  onRotate={handleBulkRotate}
-                  onExportLabels={handleExportLabels}
-                  onClearSelection={() => setSelectedStandIds(new Set())}
-                  disabled={!canEdit}
-                />
-              ) : selectedStand ? (
-                <div className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="label">Standnummer</Label>
-                    <Input
-                      id="label"
-                      value={selectedStand.label}
-                      onChange={(e) => updateStand(selectedStand.id, { label: e.target.value })}
-                      disabled={!canEdit}
-                    />
-                  </div>
+        {/* Right sidebar - Properties / Warnings / Log (hidden in fullscreen) */}
+        {!isFullscreen && (
+          <div className="w-72 bg-card border-l border-border overflow-y-auto">
+            <Tabs value={rightPanelTab} onValueChange={setRightPanelTab} className="h-full flex flex-col">
+              <TabsList className="w-full rounded-none border-b border-border">
+                <TabsTrigger value="properties" className="flex-1">Eigenschappen</TabsTrigger>
+                <TabsTrigger value="warnings" className="flex-1 relative">
+                  Warnings
+                  {warnings.length > 0 && (
+                    <span className="absolute -top-1 -right-1 w-4 h-4 bg-warning text-warning-foreground text-[10px] rounded-full flex items-center justify-center">
+                      {warnings.length}
+                    </span>
+                  )}
+                </TabsTrigger>
+                <TabsTrigger value="log" className="flex-1">Log</TabsTrigger>
+              </TabsList>
+              
+              <TabsContent value="properties" className="flex-1 p-4 m-0 overflow-y-auto">
+                {selectedStandIds.size > 1 ? (
+                  <BulkActionsPanel
+                    selectedCount={selectedStandIds.size}
+                    onSetStatus={handleBulkSetStatus}
+                    onSnapToGrid={handleBulkSnapToGrid}
+                    onClearExhibitor={handleBulkClearExhibitor}
+                    onRotate={handleBulkRotate}
+                    onExportLabels={handleExportLabels}
+                    onClearSelection={() => setSelectedStandIds(new Set())}
+                    disabled={!canEdit}
+                  />
+                ) : selectedStand ? (
+                  <div className="space-y-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="label">Standnummer</Label>
+                      <Input
+                        id="label"
+                        value={selectedStand.label}
+                        onChange={(e) => updateStand(selectedStand.id, { label: e.target.value })}
+                        disabled={!canEdit}
+                      />
+                    </div>
 
-                  <div className="space-y-2">
-                    <Label>Status</Label>
-                    <StandStatusSelect
-                      value={selectedStand.status}
-                      onChange={(status) => updateStand(selectedStand.id, { status })}
-                      disabled={!canEdit}
-                    />
-                  </div>
+                    <div className="space-y-2">
+                      <Label>Status</Label>
+                      <StandStatusSelect
+                        value={selectedStand.status}
+                        onChange={(status) => updateStand(selectedStand.id, { status })}
+                        disabled={!canEdit}
+                      />
+                    </div>
 
-                  <div className="space-y-2">
-                    <Label>Exposant</Label>
-                    <Select
-                      value={selectedStand.exhibitor_id || 'none'}
-                      onValueChange={(value) =>
-                        updateStandWithAutoStatus(selectedStand.id, { exhibitor_id: value === 'none' ? null : value })
-                      }
-                      disabled={!canEdit}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Selecteer exposant" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="none">Geen exposant</SelectItem>
-                        {exhibitors.map((ex) => (
-                          <SelectItem key={ex.id} value={ex.id}>
-                            {ex.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    {canEdit && activeExhibitorId && !selectedStand.exhibitor_id && (
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="w-full"
-                        onClick={() => updateStandWithAutoStatus(selectedStand.id, { exhibitor_id: activeExhibitorId })}
+                    <div className="space-y-2">
+                      <Label>Exposant</Label>
+                      <Select
+                        value={selectedStand.exhibitor_id || 'none'}
+                        onValueChange={(value) =>
+                          updateStandWithAutoStatus(selectedStand.id, { exhibitor_id: value === 'none' ? null : value })
+                        }
+                        disabled={!canEdit}
                       >
-                        Koppel actieve exposant
+                        <SelectTrigger>
+                          <SelectValue placeholder="Selecteer exposant" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="none">Geen exposant</SelectItem>
+                          {exhibitors.map((ex) => (
+                            <SelectItem key={ex.id} value={ex.id}>
+                              {ex.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      {canEdit && activeExhibitorId && !selectedStand.exhibitor_id && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="w-full"
+                          onClick={() => updateStandWithAutoStatus(selectedStand.id, { exhibitor_id: activeExhibitorId })}
+                        >
+                          Koppel actieve exposant
+                        </Button>
+                      )}
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="space-y-2">
+                        <Label htmlFor="x">X</Label>
+                        <Input
+                          id="x"
+                          type="number"
+                          value={selectedStand.x}
+                          onChange={(e) => updateStand(selectedStand.id, { x: Number(e.target.value) })}
+                          disabled={!canEdit}
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="y">Y</Label>
+                        <Input
+                          id="y"
+                          type="number"
+                          value={selectedStand.y}
+                          onChange={(e) => updateStand(selectedStand.id, { y: Number(e.target.value) })}
+                          disabled={!canEdit}
+                        />
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="space-y-2">
+                        <Label htmlFor="width">Breedte</Label>
+                        <Input
+                          id="width"
+                          type="number"
+                          value={selectedStand.width}
+                          onChange={(e) => updateStand(selectedStand.id, { width: Number(e.target.value) })}
+                          disabled={!canEdit}
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="height">Hoogte</Label>
+                        <Input
+                          id="height"
+                          type="number"
+                          value={selectedStand.height}
+                          onChange={(e) => updateStand(selectedStand.id, { height: Number(e.target.value) })}
+                          disabled={!canEdit}
+                        />
+                      </div>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="rotation">Rotatie (°)</Label>
+                      <Input
+                        id="rotation"
+                        type="number"
+                        value={selectedStand.rotation}
+                        onChange={(e) => updateStand(selectedStand.id, { rotation: Number(e.target.value) })}
+                        disabled={!canEdit}
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="notes">Notities</Label>
+                      <Textarea
+                        id="notes"
+                        value={selectedStand.notes || ''}
+                        onChange={(e) => updateStand(selectedStand.id, { notes: e.target.value })}
+                        rows={3}
+                        disabled={!canEdit}
+                      />
+                    </div>
+
+                    <ExhibitorServicesPanel
+                      exhibitorName={getExhibitorName(selectedStand.exhibitor_id)}
+                      services={selectedStand.exhibitor_id 
+                        ? exhibitorServices.find(s => s.exhibitor_id === selectedStand.exhibitor_id) || null
+                        : null
+                      }
+                    />
+
+                    {canEdit && (
+                      <Button
+                        variant="destructive"
+                        size="sm"
+                        className="w-full mt-4"
+                        onClick={deleteStand}
+                      >
+                        <Trash2 className="w-4 h-4 mr-2" />
+                        Stand verwijderen
                       </Button>
                     )}
                   </div>
-
-                  <div className="grid grid-cols-2 gap-3">
-                    <div className="space-y-2">
-                      <Label htmlFor="x">X</Label>
-                      <Input
-                        id="x"
-                        type="number"
-                        value={selectedStand.x}
-                        onChange={(e) => updateStand(selectedStand.id, { x: Number(e.target.value) })}
-                        disabled={!canEdit}
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="y">Y</Label>
-                      <Input
-                        id="y"
-                        type="number"
-                        value={selectedStand.y}
-                        onChange={(e) => updateStand(selectedStand.id, { y: Number(e.target.value) })}
-                        disabled={!canEdit}
-                      />
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-3">
-                    <div className="space-y-2">
-                      <Label htmlFor="width">Breedte</Label>
-                      <Input
-                        id="width"
-                        type="number"
-                        value={selectedStand.width}
-                        onChange={(e) => updateStand(selectedStand.id, { width: Number(e.target.value) })}
-                        disabled={!canEdit}
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="height">Hoogte</Label>
-                      <Input
-                        id="height"
-                        type="number"
-                        value={selectedStand.height}
-                        onChange={(e) => updateStand(selectedStand.id, { height: Number(e.target.value) })}
-                        disabled={!canEdit}
-                      />
-                    </div>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="rotation">Rotatie (°)</Label>
-                    <Input
-                      id="rotation"
-                      type="number"
-                      value={selectedStand.rotation}
-                      onChange={(e) => updateStand(selectedStand.id, { rotation: Number(e.target.value) })}
-                      disabled={!canEdit}
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="notes">Notities</Label>
-                    <Textarea
-                      id="notes"
-                      value={selectedStand.notes || ''}
-                      onChange={(e) => updateStand(selectedStand.id, { notes: e.target.value })}
-                      rows={3}
-                      disabled={!canEdit}
-                    />
-                  </div>
-
-                  <ExhibitorServicesPanel
-                    exhibitorName={getExhibitorName(selectedStand.exhibitor_id)}
-                    services={selectedStand.exhibitor_id 
-                      ? exhibitorServices.find(s => s.exhibitor_id === selectedStand.exhibitor_id) || null
-                      : null
-                    }
-                  />
-
-                  {canEdit && (
-                    <Button
-                      variant="destructive"
-                      size="sm"
-                      className="w-full mt-4"
-                      onClick={deleteStand}
-                    >
-                      <Trash2 className="w-4 h-4 mr-2" />
-                      Stand verwijderen
-                    </Button>
-                  )}
-                </div>
-              ) : (
-                <p className="text-sm text-muted-foreground">
-                  Selecteer een stand om de eigenschappen te {canEdit ? 'bewerken' : 'bekijken'}.
-                  <br /><br />
-                  <span className="text-xs">Tip: Gebruik Shift+klik voor multi-select.</span>
-                </p>
-              )}
-            </TabsContent>
-            
-            <TabsContent value="warnings" className="flex-1 p-4 m-0 overflow-y-auto">
-              <WarningsPanel
-                warnings={warnings}
-                onSelectStand={(id) => setSelectedStandIds(new Set([id]))}
-                onFixDuplicates={canEdit ? handleFixDuplicates : undefined}
-                onClampToBounds={canEdit ? handleClampToBounds : undefined}
-              />
-            </TabsContent>
-            
-            <TabsContent value="log" className="flex-1 p-4 m-0 overflow-y-auto">
-              {eventId && (
-                <AuditLogPanel
-                  eventId={eventId}
-                  floorplanId={selectedFloorplanId || undefined}
+                ) : (
+                  <p className="text-sm text-muted-foreground">
+                    Selecteer een stand om de eigenschappen te {canEdit ? 'bewerken' : 'bekijken'}.
+                    <br /><br />
+                    <span className="text-xs">Tips:</span>
+                    <ul className="text-xs mt-1 space-y-1 text-muted-foreground">
+                      <li>• Shift+klik voor multi-select</li>
+                      <li>• Spatie+slepen om te pannen</li>
+                      <li>• Scroll om te zoomen</li>
+                      <li>• F voor fullscreen</li>
+                    </ul>
+                  </p>
+                )}
+              </TabsContent>
+              
+              <TabsContent value="warnings" className="flex-1 p-4 m-0 overflow-y-auto">
+                <WarningsPanelEnhanced
+                  warnings={warnings}
                   onSelectStand={(id) => setSelectedStandIds(new Set([id]))}
+                  onFixDuplicates={canEdit ? handleFixDuplicates : undefined}
+                  onClampToBounds={canEdit ? handleClampToBounds : undefined}
                 />
-              )}
-            </TabsContent>
-          </Tabs>
-        </div>
+              </TabsContent>
+              
+              <TabsContent value="log" className="flex-1 p-4 m-0 overflow-y-auto">
+                {eventId && (
+                  <AuditLogPanelEnhanced
+                    eventId={eventId}
+                    floorplanId={selectedFloorplanId || undefined}
+                    onSelectStand={(id) => setSelectedStandIds(new Set([id]))}
+                  />
+                )}
+              </TabsContent>
+            </Tabs>
+          </div>
+        )}
       </div>
 
       {/* Modals */}
-      <AutoLabelingModal
+      <LabelingModalEnhanced
         open={showLabelingModal}
         onClose={() => setShowLabelingModal(false)}
         onApply={handleApplyLabels}
         selectedCount={selectedStandIds.size}
         totalCount={stands.length}
+        existingLabels={stands.map(s => s.label)}
       />
       
-      <ExportDialog
+      <ExportDialogEnhanced
         open={showExportDialog}
         onClose={() => setShowExportDialog(false)}
         onExport={handleExport}
         eventName={eventName}
         floorplanName={floorplan?.name || 'Floorplan'}
+      />
+
+      <SaveAsTemplateDialog
+        open={showTemplateDialog}
+        onClose={() => setShowTemplateDialog(false)}
+        floorplan={floorplan || null}
+        stands={stands}
       />
     </div>
   );

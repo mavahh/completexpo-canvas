@@ -29,6 +29,7 @@ import EventUsers from "./pages/EventUsers";
 import EventRequests from "./pages/EventRequests";
 import PublicRequest from "./pages/PublicRequest";
 import PlaceholderPage from "./pages/PlaceholderPage";
+import Templates from "./pages/Templates";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -75,6 +76,7 @@ const App = () => (
               <Route path="/roles" element={<Roles />} />
               <Route path="/exhibitor-library" element={<ExhibitorLibrary />} />
               <Route path="/settings" element={<PlaceholderPage title="Instellingen" />} />
+              <Route path="/templates" element={<Templates />} />
               <Route path="/crm" element={<PlaceholderPage title="CRM" />} />
               
               {/* Super admin routes */}
