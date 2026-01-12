@@ -24,12 +24,9 @@ import {
   Building2,
   Loader2,
   Plus,
-  CheckCircle
+  CheckCircle,
+  Monitor
 } from 'lucide-react';
-
-// Import screenshot images
-import dashboardMockup from '@/assets/landing/dashboard-mockup.png';
-import floorplanMockup from '@/assets/landing/floorplan-mockup.png';
 
 // Smooth scroll helper
 const scrollToSection = (id: string) => {
@@ -182,24 +179,18 @@ function HeroSection() {
             </div>
           </div>
 
-          {/* Right: Screenshots */}
+          {/* Right: Screenshot Placeholders */}
           <div className="order-1 lg:order-2 relative">
             {/* Main screenshot */}
-            <div className="bg-white border border-border rounded-2xl shadow-xl overflow-hidden">
-              <img 
-                src={dashboardMockup} 
-                alt="Completexpo Dashboard" 
-                className="w-full h-auto"
-              />
+            <div className="bg-secondary/50 border-2 border-dashed border-border rounded-2xl p-8 aspect-[4/3] flex flex-col items-center justify-center">
+              <Monitor className="w-12 h-12 text-muted-foreground/50 mb-3" />
+              <span className="text-xs text-muted-foreground uppercase tracking-wider">Screenshot: Dashboard UI</span>
             </div>
             
             {/* Overlapping floorplan screenshot */}
-            <div className="absolute -bottom-8 -right-4 lg:right-8 w-48 sm:w-64 bg-white border border-border rounded-xl shadow-xl overflow-hidden">
-              <img 
-                src={floorplanMockup} 
-                alt="Floorplan Editor" 
-                className="w-full h-auto"
-              />
+            <div className="absolute -bottom-8 -right-4 lg:right-8 w-48 sm:w-56 bg-white border-2 border-dashed border-border rounded-xl p-4 shadow-lg flex flex-col items-center justify-center aspect-[4/3]">
+              <Layout className="w-8 h-8 text-muted-foreground/50 mb-2" />
+              <span className="text-[10px] text-muted-foreground uppercase tracking-wider text-center">Screenshot: Floorplan Editor</span>
             </div>
           </div>
         </div>
@@ -359,13 +350,10 @@ function FloorplanSection() {
         </div>
 
         <div className="grid lg:grid-cols-2 gap-8 items-start">
-          {/* Screenshot */}
-          <div className="bg-[hsl(var(--landing-dark-card))] border border-white/10 rounded-2xl overflow-hidden">
-            <img 
-              src={floorplanMockup} 
-              alt="Floorplan Editor UI" 
-              className="w-full h-auto"
-            />
+          {/* Screenshot placeholder */}
+          <div className="bg-[hsl(var(--landing-dark-card))] border border-white/10 rounded-2xl p-8 aspect-[4/3] flex flex-col items-center justify-center">
+            <Layout className="w-16 h-16 text-white/30 mb-4" />
+            <span className="text-xs text-white/50 uppercase tracking-wider">Screenshot: Floorplan Editor UI</span>
           </div>
 
           {/* Feature cards */}
