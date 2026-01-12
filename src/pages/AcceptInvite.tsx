@@ -299,7 +299,42 @@ export default function AcceptInvite() {
   }
 
   if (user) {
-    // Already logged in - handle differently
+    // Already logged in - check if email matches
+    const emailMatches = user.email?.toLowerCase() === invite?.email?.toLowerCase();
+    
+    const handleLogoutAndContinue = async () => {
+      await supabase.auth.signOut();
+      // Page will re-render and show the signup form
+    };
+    
+    if (!emailMatches) {
+      // Wrong user logged in - show warning
+      return (
+        <div className="min-h-screen bg-background flex items-center justify-center p-4">
+          <Card className="w-full max-w-md text-center">
+            <CardHeader>
+              <div className="w-16 h-16 bg-destructive/10 rounded-full flex items-center justify-center mx-auto mb-4">
+                <XCircle className="w-8 h-8 text-destructive" />
+              </div>
+              <CardTitle>Verkeerd account</CardTitle>
+              <CardDescription className="mt-2">
+                Je bent ingelogd als <strong>{user.email}</strong>, maar deze uitnodiging is voor <strong>{invite?.email}</strong>.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <Button onClick={handleLogoutAndContinue} className="w-full">
+                Uitloggen en doorgaan
+              </Button>
+              <Button onClick={() => navigate('/dashboard')} variant="outline" className="w-full">
+                Naar dashboard
+              </Button>
+            </CardContent>
+          </Card>
+        </div>
+      );
+    }
+    
+    // Correct user logged in - allow accepting
     return (
       <div className="min-h-screen bg-background flex items-center justify-center p-4">
         <Card className="w-full max-w-md text-center">
