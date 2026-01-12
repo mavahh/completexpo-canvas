@@ -101,7 +101,7 @@ const handler = async (req: Request): Promise<Response> => {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        from: "Completexpo <info@lppayments.be>",
+        from: "Completexpo <info@avrental.be>",
         to: [to_email],
         subject: "Je Completexpo account is goedgekeurd!",
         html: htmlContent,
