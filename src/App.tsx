@@ -20,6 +20,8 @@ import EventDetail from "./pages/EventDetail";
 import Exhibitors from "./pages/Exhibitors";
 import ExhibitorLibrary from "./pages/ExhibitorLibrary";
 import FloorplanEditor from "./pages/FloorplanEditor";
+import FloorplanFullscreenEditor from "./pages/FloorplanFullscreenEditor";
+import PublicFloorplan from "./pages/PublicFloorplan";
 import Users from "./pages/Users";
 import UserDetail from "./pages/UserDetail";
 import Roles from "./pages/Roles";
@@ -65,6 +67,7 @@ const App = () => (
             <Route path="/request/:token" element={<PublicRequest />} />
             <Route path="/invite/:token" element={<AcceptInvite />} />
             <Route path="/exhibitor/:token" element={<ExhibitorPortal />} />
+            <Route path="/p/:token" element={<PublicFloorplan />} />
 
             {/* Protected routes */}
             <Route element={<ProtectedRoute><DashboardLayout /></ProtectedRoute>}>
@@ -98,6 +101,9 @@ const App = () => (
               <Route path="/admin/email-outbox" element={<AdminEmailOutbox />} />
               <Route path="/admin/users" element={<AdminUsers />} />
             </Route>
+
+            {/* Fullscreen editor - outside dashboard layout */}
+            <Route path="/events/:id/floorplan/editor" element={<ProtectedRoute><FloorplanFullscreenEditor /></ProtectedRoute>} />
 
             {/* Catch-all */}
             <Route path="*" element={<NotFound />} />

@@ -308,6 +308,54 @@ export type Database = {
           },
         ]
       }
+      event_public_links: {
+        Row: {
+          allow_downloads: boolean
+          created_at: string
+          default_floorplan_id: string | null
+          enabled: boolean
+          event_id: string
+          id: string
+          token: string
+          updated_at: string
+        }
+        Insert: {
+          allow_downloads?: boolean
+          created_at?: string
+          default_floorplan_id?: string | null
+          enabled?: boolean
+          event_id: string
+          id?: string
+          token?: string
+          updated_at?: string
+        }
+        Update: {
+          allow_downloads?: boolean
+          created_at?: string
+          default_floorplan_id?: string | null
+          enabled?: boolean
+          event_id?: string
+          id?: string
+          token?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "event_public_links_default_floorplan_id_fkey"
+            columns: ["default_floorplan_id"]
+            isOneToOne: false
+            referencedRelation: "floorplans"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "event_public_links_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: true
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       events: {
         Row: {
           account_id: string | null

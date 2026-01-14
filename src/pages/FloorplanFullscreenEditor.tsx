@@ -1,0 +1,239 @@
+import { useEffect, useRef, useState } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
+import { Loader2, ArrowLeft, Eye } from 'lucide-react';
+import { useEventRole } from '@/hooks/useEventRole';
+import { useDarkMode } from '@/hooks/useDarkMode';
+import { useFullscreen } from '@/hooks/useFullscreen';
+import { useFloorplanData, useCanvasInteraction, useFloorplanExport } from '@/hooks/floorplan';
+import { FloorplanEditorToolbar } from '@/components/floorplan/FloorplanEditorToolbar';
+import { FloorplanRightSidebar } from '@/components/floorplan/FloorplanRightSidebar';
+import { FloorplanCanvasEnhanced } from '@/components/floorplan/FloorplanCanvasEnhanced';
+import { LabelingModalEnhanced } from '@/components/floorplan/LabelingModalEnhanced';
+import { ExportDialogEnhanced } from '@/components/floorplan/ExportDialogEnhanced';
+import { SaveAsTemplateDialog } from '@/components/floorplan/SaveAsTemplateDialog';
+import { Badge } from '@/components/ui/badge';
+
+export default function FloorplanFullscreenEditor() {
+  const { id: eventId } = useParams();
+  const navigate = useNavigate();
+  const { canEdit, isReadOnly, loading: roleLoading } = useEventRole(eventId);
+  const { isDark, toggle: toggleDarkMode } = useDarkMode();
+  
+  const editorRef = useRef<HTMLDivElement>(null);
+  const canvasRef = useRef<HTMLDivElement>(null);
+  const canvasContainerRef = useRef<HTMLDivElement>(null);
+  
+  const { isFullscreen, toggleFullscreen } = useFullscreen(editorRef);
+  
+  // Modal states
+  const [showLabelingModal, setShowLabelingModal] = useState(false);
+  const [showExportDialog, setShowExportDialog] = useState(false);
+  const [showTemplateDialog, setShowTemplateDialog] = useState(false);
+  const [rightPanelTab, setRightPanelTab] = useState('properties');
+  const [showRightPanel, setShowRightPanel] = useState(true);
+
+  // Floorplan data hook
+  const floorplanData = useFloorplanData({ eventId, canEdit });
+  
+  // Canvas interaction hook
+  const canvasInteraction = useCanvasInteraction({
+    floorplan: floorplanData.floorplan,
+    stands: floorplanData.stands,
+    selectedStandIds: floorplanData.selectedStandIds,
+    canEdit,
+    canvasRef,
+    canvasContainerRef,
+    setSelectedStandIds: floorplanData.setSelectedStandIds,
+    updateStand: floorplanData.updateStand,
+    deleteStand: floorplanData.deleteStand,
+  });
+
+  // Export hook
+  const { handleExport } = useFloorplanExport({
+    canvasRef,
+    floorplan: floorplanData.floorplan,
+    eventName: floorplanData.eventName,
+    statusCounts: floorplanData.statusCounts,
+    showGrid: canvasInteraction.showGrid,
+    setShowGrid: canvasInteraction.setShowGrid,
+  });
+
+  // Initial data fetch
+  useEffect(() => {
+    floorplanData.fetchData();
+  }, [eventId]);
+
+  // Fetch stands when floorplan changes
+  useEffect(() => {
+    floorplanData.fetchStands();
+  }, [floorplanData.selectedFloorplanId]);
+
+  // Auto-enter fullscreen on mount (optional - can be removed)
+  useEffect(() => {
+    // Give the user a moment before fullscreen prompt
+    const timer = setTimeout(() => {
+      // Don't auto-fullscreen, let user choose
+    }, 500);
+    return () => clearTimeout(timer);
+  }, []);
+
+  if (floorplanData.loading || roleLoading) {
+    return (
+      <div className="flex items-center justify-center h-screen bg-background">
+        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  return (
+    <div 
+      ref={editorRef}
+      className="fixed inset-0 z-50 bg-background flex flex-col animate-fade-in"
+    >
+      {/* Minimal top bar */}
+      <div className="flex items-center justify-between px-4 py-2 border-b border-border bg-card">
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => navigate(`/events/${eventId}/floorplan`)}
+            className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            <span className="text-sm">Terug naar editor</span>
+          </button>
+          
+          <div className="h-4 w-px bg-border" />
+          
+          <span className="text-sm font-medium text-foreground">
+            {floorplanData.eventName}
+          </span>
+          
+          {isReadOnly && (
+            <Badge variant="secondary" className="gap-1">
+              <Eye className="w-3 h-3" />
+              Read-only
+            </Badge>
+          )}
+        </div>
+
+        <div className="flex items-center gap-2">
+          <span className="text-xs text-muted-foreground">
+            Druk op <kbd className="px-1.5 py-0.5 rounded bg-muted text-xs">F</kbd> voor fullscreen
+          </span>
+        </div>
+      </div>
+
+      {/* Main toolbar */}
+      <FloorplanEditorToolbar
+        eventId={eventId || ''}
+        floorplans={floorplanData.floorplans}
+        floorplan={floorplanData.floorplan}
+        selectedFloorplanId={floorplanData.selectedFloorplanId}
+        zoom={canvasInteraction.zoom}
+        showGrid={canvasInteraction.showGrid}
+        isDark={isDark}
+        isFullscreen={isFullscreen}
+        isReadOnly={isReadOnly}
+        canEdit={canEdit}
+        saving={floorplanData.saving}
+        dirty={floorplanData.dirty}
+        warningsCount={floorplanData.warnings.length}
+        onNavigateBack={() => navigate(`/events/${eventId}/floorplan`)}
+        onSelectFloorplan={floorplanData.setSelectedFloorplanId}
+        onFloorplanAdded={floorplanData.handleFloorplanAdded}
+        onZoomIn={() => canvasInteraction.setZoom(Math.min(3, canvasInteraction.zoom + 0.1))}
+        onZoomOut={() => canvasInteraction.setZoom(Math.max(0.1, canvasInteraction.zoom - 0.1))}
+        onZoomReset={() => { canvasInteraction.setZoom(1); canvasInteraction.setPan({ x: 0, y: 0 }); }}
+        onFitToScreen={canvasInteraction.fitToScreen}
+        onToggleGrid={() => canvasInteraction.setShowGrid(!canvasInteraction.showGrid)}
+        onToggleDarkMode={toggleDarkMode}
+        onToggleFullscreen={toggleFullscreen}
+        onBackgroundChange={floorplanData.handleBackgroundChange}
+        onOpenLabeling={() => setShowLabelingModal(true)}
+        onOpenExport={() => setShowExportDialog(true)}
+        onOpenTemplate={() => setShowTemplateDialog(true)}
+        onAddStand={floorplanData.addStand}
+        onSaveAll={floorplanData.saveAll}
+        onOpenWarnings={() => setRightPanelTab('warnings')}
+      />
+
+      <div className="flex flex-1 overflow-hidden">
+        {/* Canvas takes maximum space */}
+        <FloorplanCanvasEnhanced
+          ref={canvasRef}
+          floorplan={floorplanData.floorplan}
+          stands={floorplanData.filteredStands}
+          selectedStandIds={floorplanData.selectedStandIds}
+          exhibitorServices={floorplanData.exhibitorServices}
+          zoom={canvasInteraction.zoom}
+          pan={canvasInteraction.pan}
+          showGrid={canvasInteraction.showGrid}
+          isPanning={canvasInteraction.isPanning}
+          spacePressed={canvasInteraction.spacePressed}
+          canEdit={canEdit}
+          statusFilters={floorplanData.statusFilters}
+          getExhibitorName={floorplanData.getExhibitorName}
+          onMouseDown={canvasInteraction.handleMouseDown}
+          onMouseMove={canvasInteraction.handleMouseMove}
+          onMouseUp={canvasInteraction.handleMouseUp}
+          onResizeStart={canvasInteraction.handleResizeStart}
+        />
+
+        {/* Collapsible right sidebar */}
+        {showRightPanel && (
+          <FloorplanRightSidebar
+            activeTab={rightPanelTab}
+            onTabChange={setRightPanelTab}
+            selectedStandIds={floorplanData.selectedStandIds}
+            selectedStand={floorplanData.selectedStand}
+            stands={floorplanData.stands}
+            exhibitors={floorplanData.exhibitors}
+            exhibitorServices={floorplanData.exhibitorServices}
+            activeExhibitorId={floorplanData.activeExhibitorId}
+            warnings={floorplanData.warnings}
+            eventId={eventId || ''}
+            selectedFloorplanId={floorplanData.selectedFloorplanId}
+            canEdit={canEdit}
+            onUpdateStand={floorplanData.updateStand}
+            onUpdateStandWithAutoStatus={floorplanData.updateStandWithAutoStatus}
+            onDeleteStand={floorplanData.deleteStand}
+            onSelectStand={(id) => floorplanData.setSelectedStandIds(new Set([id]))}
+            onClearSelection={() => floorplanData.setSelectedStandIds(new Set())}
+            onBulkSetStatus={floorplanData.handleBulkSetStatus}
+            onBulkSnapToGrid={floorplanData.handleBulkSnapToGrid}
+            onBulkClearExhibitor={floorplanData.handleBulkClearExhibitor}
+            onBulkRotate={floorplanData.handleBulkRotate}
+            onExportLabels={floorplanData.handleExportLabels}
+            onFixDuplicates={canEdit ? floorplanData.handleFixDuplicates : undefined}
+            onClampToBounds={canEdit ? floorplanData.handleClampToBounds : undefined}
+            getExhibitorName={floorplanData.getExhibitorName}
+          />
+        )}
+      </div>
+
+      {/* Modals */}
+      <LabelingModalEnhanced
+        open={showLabelingModal}
+        onClose={() => setShowLabelingModal(false)}
+        onApply={floorplanData.handleApplyLabels}
+        selectedCount={floorplanData.selectedStandIds.size}
+        totalCount={floorplanData.stands.length}
+        existingLabels={floorplanData.stands.map(s => s.label)}
+      />
+      
+      <ExportDialogEnhanced
+        open={showExportDialog}
+        onClose={() => setShowExportDialog(false)}
+        onExport={handleExport}
+        eventName={floorplanData.eventName}
+        floorplanName={floorplanData.floorplan?.name || 'Floorplan'}
+      />
+
+      <SaveAsTemplateDialog
+        open={showTemplateDialog}
+        onClose={() => setShowTemplateDialog(false)}
+        floorplan={floorplanData.floorplan || null}
+        stands={floorplanData.stands}
+      />
+    </div>
+  );
+}
