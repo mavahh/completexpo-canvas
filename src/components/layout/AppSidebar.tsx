@@ -75,18 +75,41 @@ export function AppSidebar() {
     navigate('/login');
   };
 
+  // Improved isActive with proper route matching
   const isActive = (path: string) => {
-    if (path === '/dashboard') return location.pathname === '/dashboard';
+    const pathname = location.pathname;
+    
+    // Dashboard: exact match
+    if (path === '/dashboard') {
+      return pathname === '/dashboard';
+    }
+    
+    // Floorplan: matches /events/:id/floorplan AND /events/:id/floorplan/editor
     if (path === '/floorplan' && eventId) {
-      return location.pathname === `/events/${eventId}/floorplan`;
+      return pathname.startsWith(`/events/${eventId}/floorplan`);
     }
+    
+    // Exhibitors: exact match for event exhibitors
     if (path === '/exhibitors' && eventId) {
-      return location.pathname === `/events/${eventId}/exhibitors`;
+      return pathname === `/events/${eventId}/exhibitors`;
     }
+    
+    // Settings: exact match for event settings
     if (path === '/settings' && eventId) {
-      return location.pathname === `/events/${eventId}/settings`;
+      return pathname === `/events/${eventId}/settings`;
     }
-    return location.pathname.startsWith(path);
+    
+    // Events: match /events but not when in event-specific pages like floorplan, exhibitors, settings
+    if (path === '/events') {
+      // Match /events, /events/new, /events/:id, /events/:id/edit
+      // But not /events/:id/floorplan, /events/:id/exhibitors, /events/:id/settings
+      if (pathname === '/events' || pathname === '/events/new') return true;
+      const eventMatch = pathname.match(/^\/events\/([^/]+)(\/edit)?$/);
+      return !!eventMatch;
+    }
+    
+    // For other paths, use startsWith
+    return pathname.startsWith(path);
   };
 
   const getHref = (item: NavItem) => {

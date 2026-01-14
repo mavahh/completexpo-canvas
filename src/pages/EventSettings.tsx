@@ -6,10 +6,151 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
+import { Switch } from '@/components/ui/switch';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
-import { ArrowLeft, Loader2, Upload, Trash2, FileText, Copy, Check, ExternalLink } from 'lucide-react';
+import { ArrowLeft, Loader2, Upload, Trash2, FileText, Copy, Check, ExternalLink, Globe, RefreshCw } from 'lucide-react';
+
+// Public Plan Settings Component
+function PublicPlanSettings({ eventId, canManage }: { eventId: string; canManage: boolean }) {
+  const { toast } = useToast();
+  const [loading, setLoading] = useState(true);
+  const [publicLink, setPublicLink] = useState<{
+    id: string;
+    token: string;
+    enabled: boolean;
+    allow_downloads: boolean;
+  } | null>(null);
+  const [copied, setCopied] = useState(false);
+
+  useEffect(() => {
+    fetchPublicLink();
+  }, [eventId]);
+
+  const fetchPublicLink = async () => {
+    const { data } = await supabase
+      .from('event_public_links')
+      .select('*')
+      .eq('event_id', eventId)
+      .single();
+    setPublicLink(data);
+    setLoading(false);
+  };
+
+  const createLink = async () => {
+    const { data, error } = await supabase
+      .from('event_public_links')
+      .insert({ event_id: eventId, enabled: true })
+      .select()
+      .single();
+    if (error) {
+      toast({ variant: 'destructive', title: 'Fout', description: error.message });
+    } else {
+      setPublicLink(data);
+      toast({ title: 'Link aangemaakt' });
+    }
+  };
+
+  const toggleEnabled = async () => {
+    if (!publicLink) return;
+    const { error } = await supabase
+      .from('event_public_links')
+      .update({ enabled: !publicLink.enabled })
+      .eq('id', publicLink.id);
+    if (!error) {
+      setPublicLink({ ...publicLink, enabled: !publicLink.enabled });
+    }
+  };
+
+  const regenerateToken = async () => {
+    if (!publicLink) return;
+    const newToken = crypto.randomUUID().replace(/-/g, '') + crypto.randomUUID().replace(/-/g, '');
+    const { error } = await supabase
+      .from('event_public_links')
+      .update({ token: newToken.slice(0, 64) })
+      .eq('id', publicLink.id);
+    if (!error) {
+      setPublicLink({ ...publicLink, token: newToken.slice(0, 64) });
+      toast({ title: 'Token vernieuwd', description: 'Oude links werken niet meer' });
+    }
+  };
+
+  const copyLink = () => {
+    if (!publicLink) return;
+    navigator.clipboard.writeText(`${window.location.origin}/p/${publicLink.token}`);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+    toast({ title: 'Gekopieerd' });
+  };
+
+  if (loading) {
+    return <Loader2 className="w-6 h-6 animate-spin" />;
+  }
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <Globe className="w-5 h-5" />
+          Publieke plattegrond
+        </CardTitle>
+        <CardDescription>
+          Deel een read-only weergave van je plattegrond met bezoekers of exposanten.
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        {publicLink ? (
+          <>
+            <div className="flex items-center gap-4">
+              <Switch
+                checked={publicLink.enabled}
+                onCheckedChange={toggleEnabled}
+                disabled={!canManage}
+              />
+              <span className="text-sm">
+                {publicLink.enabled ? 'Actief' : 'Uitgeschakeld'}
+              </span>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <Input
+                value={`${window.location.origin}/p/${publicLink.token}`}
+                readOnly
+                className="font-mono text-sm"
+              />
+              <Button variant="outline" size="icon" onClick={copyLink}>
+                {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+              </Button>
+              <Button variant="outline" size="icon" onClick={() => window.open(`/p/${publicLink.token}`, '_blank')}>
+                <ExternalLink className="w-4 h-4" />
+              </Button>
+            </div>
+
+            {canManage && (
+              <Button variant="outline" size="sm" onClick={regenerateToken}>
+                <RefreshCw className="w-4 h-4 mr-2" />
+                Nieuwe link genereren
+              </Button>
+            )}
+          </>
+        ) : (
+          <>
+            <p className="text-muted-foreground text-sm">
+              Er is nog geen publieke link voor dit evenement.
+            </p>
+            {canManage && (
+              <Button onClick={createLink}>
+                <Globe className="w-4 h-4 mr-2" />
+                Publieke link aanmaken
+              </Button>
+            )}
+          </>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
 
 interface EventDocument {
   id: string;
@@ -214,6 +355,7 @@ export default function EventSettings() {
         <TabsList>
           <TabsTrigger value="terms">Verkoopvoorwaarden</TabsTrigger>
           <TabsTrigger value="requests">Aanvraaglink</TabsTrigger>
+          <TabsTrigger value="publicplan">Publiek plan</TabsTrigger>
           <TabsTrigger value="email">E-mail</TabsTrigger>
           <TabsTrigger value="payments">Online betalen</TabsTrigger>
         </TabsList>
@@ -353,6 +495,10 @@ export default function EventSettings() {
               )}
             </CardContent>
           </Card>
+        </TabsContent>
+
+        <TabsContent value="publicplan" className="space-y-4">
+          <PublicPlanSettings eventId={eventId || ''} canManage={canManageSettings} />
         </TabsContent>
 
         <TabsContent value="email">
