@@ -1,7 +1,7 @@
 import { useEffect, useState, useRef, useCallback } from 'react';
 import { useParams } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
-import { Loader2, Lock, Copy, Check, Download, Search, ZoomIn, ZoomOut, AlertTriangle } from 'lucide-react';
+import { Loader2, Lock, Copy, Check, Download, Search, ZoomIn, ZoomOut, AlertTriangle, Crosshair, RotateCcw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -12,6 +12,7 @@ import { PublicFloorplanCanvas } from '@/components/floorplan/PublicFloorplanCan
 import { PublicStandDetails } from '@/components/floorplan/PublicStandDetails';
 import { PublicHallSelector } from '@/components/floorplan/PublicHallSelector';
 import { PublicStatusFilters } from '@/components/floorplan/PublicStatusFilters';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import type { Stand, Floorplan, ExhibitorServices, ExhibitorContact } from '@/types';
 import { jsPDF } from 'jspdf';
 
@@ -36,6 +37,7 @@ export default function PublicFloorplan() {
   const { token } = useParams<{ token: string }>();
   const { toast } = useToast();
   const canvasRef = useRef<HTMLDivElement>(null);
+  const canvasContainerRef = useRef<HTMLDivElement>(null);
 
   // State
   const [loading, setLoading] = useState(true);
@@ -51,6 +53,7 @@ export default function PublicFloorplan() {
   const [searchQuery, setSearchQuery] = useState('');
   const [copied, setCopied] = useState(false);
   const [exporting, setExporting] = useState(false);
+  const [hasFitted, setHasFitted] = useState(false);
   
   // Canvas state
   const [zoom, setZoom] = useState(1);
@@ -99,6 +102,43 @@ export default function PublicFloorplan() {
     return exhibitors.find(e => e.id === id)?.name || null;
   }, [exhibitors]);
 
+  // Fit to screen function
+  const fitToScreen = useCallback(() => {
+    if (!floorplan || !canvasContainerRef.current) return;
+    
+    const container = canvasContainerRef.current;
+    const padding = 40;
+    const containerWidth = container.clientWidth - padding;
+    const containerHeight = container.clientHeight - padding;
+    
+    if (containerWidth <= 0 || containerHeight <= 0) return;
+    
+    const scaleX = containerWidth / floorplan.width;
+    const scaleY = containerHeight / floorplan.height;
+    const newZoom = Math.min(scaleX, scaleY, 1.5);
+    
+    setZoom(newZoom);
+    setPan({
+      x: (containerWidth - floorplan.width * newZoom) / 2 + padding / 2,
+      y: (containerHeight - floorplan.height * newZoom) / 2 + padding / 2,
+    });
+  }, [floorplan]);
+
+  // Reset zoom to 100% and center
+  const resetZoom = useCallback(() => {
+    if (!floorplan || !canvasContainerRef.current) return;
+    
+    const container = canvasContainerRef.current;
+    const containerWidth = container.clientWidth;
+    const containerHeight = container.clientHeight;
+    
+    setZoom(1);
+    setPan({
+      x: (containerWidth - floorplan.width) / 2,
+      y: (containerHeight - floorplan.height) / 2,
+    });
+  }, [floorplan]);
+
   // Fetch data
   useEffect(() => {
     fetchData();
@@ -107,8 +147,20 @@ export default function PublicFloorplan() {
   useEffect(() => {
     if (selectedFloorplanId) {
       fetchStands();
+      setHasFitted(false); // Reset fit state when switching floorplans
     }
   }, [selectedFloorplanId]);
+
+  // Auto-fit when floorplan and stands are loaded
+  useEffect(() => {
+    if (floorplan && stands.length >= 0 && !hasFitted && !loading) {
+      const timer = setTimeout(() => {
+        fitToScreen();
+        setHasFitted(true);
+      }, 150);
+      return () => clearTimeout(timer);
+    }
+  }, [floorplan, stands.length, hasFitted, loading, fitToScreen]);
 
   const fetchData = async () => {
     if (!token) {
@@ -424,23 +476,57 @@ export default function PublicFloorplan() {
         </aside>
 
         {/* Canvas */}
-        <div className="flex-1 overflow-hidden relative">
+        <div ref={canvasContainerRef} className="flex-1 overflow-hidden relative">
           {/* Zoom controls */}
           <div className="absolute top-4 left-4 z-10 flex gap-2">
-            <Button
-              variant="secondary"
-              size="icon"
-              onClick={() => setZoom(z => Math.min(3, z + 0.2))}
-            >
-              <ZoomIn className="w-4 h-4" />
-            </Button>
-            <Button
-              variant="secondary"
-              size="icon"
-              onClick={() => setZoom(z => Math.max(0.2, z - 0.2))}
-            >
-              <ZoomOut className="w-4 h-4" />
-            </Button>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="secondary"
+                  size="icon"
+                  onClick={() => setZoom(z => Math.min(3, z + 0.2))}
+                >
+                  <ZoomIn className="w-4 h-4" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>Inzoomen</TooltipContent>
+            </Tooltip>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="secondary"
+                  size="icon"
+                  onClick={() => setZoom(z => Math.max(0.2, z - 0.2))}
+                >
+                  <ZoomOut className="w-4 h-4" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>Uitzoomen</TooltipContent>
+            </Tooltip>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="secondary"
+                  size="icon"
+                  onClick={fitToScreen}
+                >
+                  <Crosshair className="w-4 h-4" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>Passend maken</TooltipContent>
+            </Tooltip>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="secondary"
+                  size="icon"
+                  onClick={resetZoom}
+                >
+                  <RotateCcw className="w-4 h-4" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>Reset naar 100%</TooltipContent>
+            </Tooltip>
             <Badge variant="secondary">{Math.round(zoom * 100)}%</Badge>
           </div>
 
