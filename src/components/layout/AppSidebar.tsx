@@ -12,6 +12,7 @@ import {
   UsersRound,
   Mail,
   Shield,
+  Receipt,
 } from 'lucide-react';
 import { useAuth } from '@/lib/auth';
 import { usePermissions, GlobalModuleVisibility } from '@/hooks/usePermissions';
@@ -48,6 +49,7 @@ const navItems: NavItem[] = [
   { title: 'Events', icon: Calendar, path: '/events', module: 'EVENTS' },
   { title: 'Floorplan', icon: Map, path: '/floorplan', requiresEvent: true },
   { title: 'Exhibitors', icon: Users, path: '/exhibitors', requiresEvent: true },
+  { title: 'POS', icon: Receipt, path: '/pos', requiresEvent: true, permission: 'POS_VIEW' },
   { title: 'Exposanten Bibliotheek', icon: Library, path: '/exhibitor-library', requiresAccount: true },
   { title: 'Templates', icon: FileText, path: '/templates', requiresAccount: true },
   { title: 'Team', icon: UsersRound, path: '/team', requiresAccount: true },
@@ -116,6 +118,7 @@ export function AppSidebar() {
     if (item.requiresEvent && eventId) {
       if (item.path === '/floorplan') return `/events/${eventId}/floorplan`;
       if (item.path === '/exhibitors') return `/events/${eventId}/exhibitors`;
+      if (item.path === '/pos') return `/events/${eventId}/pos`;
       if (item.path === '/settings') return `/events/${eventId}/settings`;
     }
     return item.path;
