@@ -779,6 +779,320 @@ export type Database = {
         }
         Relationships: []
       }
+      pos_categories: {
+        Row: {
+          created_at: string
+          event_id: string
+          id: string
+          name: string
+          sort_order: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          event_id: string
+          id?: string
+          name: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          event_id?: string
+          id?: string
+          name?: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pos_categories_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      pos_products: {
+        Row: {
+          active: boolean
+          category_id: string | null
+          created_at: string
+          event_id: string
+          id: string
+          name: string
+          price_cents: number
+          sku: string | null
+          updated_at: string
+          vat_rate: Database["public"]["Enums"]["vat_rate"]
+        }
+        Insert: {
+          active?: boolean
+          category_id?: string | null
+          created_at?: string
+          event_id: string
+          id?: string
+          name: string
+          price_cents: number
+          sku?: string | null
+          updated_at?: string
+          vat_rate?: Database["public"]["Enums"]["vat_rate"]
+        }
+        Update: {
+          active?: boolean
+          category_id?: string | null
+          created_at?: string
+          event_id?: string
+          id?: string
+          name?: string
+          price_cents?: number
+          sku?: string | null
+          updated_at?: string
+          vat_rate?: Database["public"]["Enums"]["vat_rate"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pos_products_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "pos_categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pos_products_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      pos_registers: {
+        Row: {
+          created_at: string
+          event_id: string
+          id: string
+          is_active: boolean
+          location: string | null
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          event_id: string
+          id?: string
+          is_active?: boolean
+          location?: string | null
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          event_id?: string
+          id?: string
+          is_active?: boolean
+          location?: string | null
+          name?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pos_registers_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      pos_sale_items: {
+        Row: {
+          id: string
+          line_total_cents: number
+          name_snapshot: string
+          price_cents_snapshot: number
+          product_id: string | null
+          qty: number
+          sale_id: string
+          vat_rate_snapshot: Database["public"]["Enums"]["vat_rate"]
+        }
+        Insert: {
+          id?: string
+          line_total_cents: number
+          name_snapshot: string
+          price_cents_snapshot: number
+          product_id?: string | null
+          qty: number
+          sale_id: string
+          vat_rate_snapshot: Database["public"]["Enums"]["vat_rate"]
+        }
+        Update: {
+          id?: string
+          line_total_cents?: number
+          name_snapshot?: string
+          price_cents_snapshot?: number
+          product_id?: string | null
+          qty?: number
+          sale_id?: string
+          vat_rate_snapshot?: Database["public"]["Enums"]["vat_rate"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pos_sale_items_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "pos_products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pos_sale_items_sale_id_fkey"
+            columns: ["sale_id"]
+            isOneToOne: false
+            referencedRelation: "pos_sales"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      pos_sales: {
+        Row: {
+          cash_received_cents: number | null
+          change_given_cents: number | null
+          created_at: string
+          event_id: string
+          id: string
+          note: string | null
+          payment_method: Database["public"]["Enums"]["payment_method"]
+          receipt_number: string | null
+          register_id: string
+          shift_id: string
+          sold_by_user_id: string
+          status: Database["public"]["Enums"]["sale_status"]
+          subtotal_cents: number
+          total_cents: number
+          vat_cents: number
+        }
+        Insert: {
+          cash_received_cents?: number | null
+          change_given_cents?: number | null
+          created_at?: string
+          event_id: string
+          id?: string
+          note?: string | null
+          payment_method: Database["public"]["Enums"]["payment_method"]
+          receipt_number?: string | null
+          register_id: string
+          shift_id: string
+          sold_by_user_id: string
+          status?: Database["public"]["Enums"]["sale_status"]
+          subtotal_cents: number
+          total_cents: number
+          vat_cents: number
+        }
+        Update: {
+          cash_received_cents?: number | null
+          change_given_cents?: number | null
+          created_at?: string
+          event_id?: string
+          id?: string
+          note?: string | null
+          payment_method?: Database["public"]["Enums"]["payment_method"]
+          receipt_number?: string | null
+          register_id?: string
+          shift_id?: string
+          sold_by_user_id?: string
+          status?: Database["public"]["Enums"]["sale_status"]
+          subtotal_cents?: number
+          total_cents?: number
+          vat_cents?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pos_sales_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pos_sales_register_id_fkey"
+            columns: ["register_id"]
+            isOneToOne: false
+            referencedRelation: "pos_registers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pos_sales_shift_id_fkey"
+            columns: ["shift_id"]
+            isOneToOne: false
+            referencedRelation: "pos_shifts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      pos_shifts: {
+        Row: {
+          closed_at: string | null
+          closed_by_user_id: string | null
+          closing_cash_cents: number | null
+          created_at: string
+          event_id: string
+          expected_cash_cents: number | null
+          id: string
+          opened_at: string
+          opened_by_user_id: string
+          opening_cash_cents: number
+          register_id: string
+          status: Database["public"]["Enums"]["shift_status"]
+          updated_at: string
+        }
+        Insert: {
+          closed_at?: string | null
+          closed_by_user_id?: string | null
+          closing_cash_cents?: number | null
+          created_at?: string
+          event_id: string
+          expected_cash_cents?: number | null
+          id?: string
+          opened_at?: string
+          opened_by_user_id: string
+          opening_cash_cents?: number
+          register_id: string
+          status?: Database["public"]["Enums"]["shift_status"]
+          updated_at?: string
+        }
+        Update: {
+          closed_at?: string | null
+          closed_by_user_id?: string | null
+          closing_cash_cents?: number | null
+          created_at?: string
+          event_id?: string
+          expected_cash_cents?: number | null
+          id?: string
+          opened_at?: string
+          opened_by_user_id?: string
+          opening_cash_cents?: number
+          register_id?: string
+          status?: Database["public"]["Enums"]["shift_status"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pos_shifts_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pos_shifts_register_id_fkey"
+            columns: ["register_id"]
+            isOneToOne: false
+            referencedRelation: "pos_registers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           account_id: string | null
@@ -1107,6 +1421,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      calculate_shift_expected_cash: {
+        Args: { _shift_id: string }
+        Returns: number
+      }
       create_event_with_defaults: {
         Args: {
           _end_date: string
@@ -1133,6 +1451,7 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      generate_receipt_number: { Args: { _event_id: string }; Returns: string }
       get_account_role: {
         Args: { _account_id: string; _user_id: string }
         Returns: Database["public"]["Enums"]["account_role"]
@@ -1180,6 +1499,7 @@ export type Database = {
         | "ACCOUNT_INVITE"
         | "EVENT_INVITE"
         | "EXHIBITOR_INVITE"
+      payment_method: "CASH" | "CARD" | "OTHER"
       power_option:
         | "NONE"
         | "WATT_500"
@@ -1188,8 +1508,11 @@ export type Database = {
         | "AMP_16A"
         | "AMP_32A"
       request_status: "NEW" | "APPROVED" | "REJECTED" | "PROCESSED"
+      sale_status: "COMPLETED" | "VOIDED" | "REFUNDED"
+      shift_status: "OPEN" | "CLOSED"
       surface_type: "EMPTY" | "EMPTY_WITH_CARPET" | "WITH_CONSTRUCTION"
       system_role: "ADMIN" | "MANAGER" | "BUILDER"
+      vat_rate: "VAT_0" | "VAT_6" | "VAT_12" | "VAT_21"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -1327,6 +1650,7 @@ export const Constants = {
         "EVENT_INVITE",
         "EXHIBITOR_INVITE",
       ],
+      payment_method: ["CASH", "CARD", "OTHER"],
       power_option: [
         "NONE",
         "WATT_500",
@@ -1336,8 +1660,11 @@ export const Constants = {
         "AMP_32A",
       ],
       request_status: ["NEW", "APPROVED", "REJECTED", "PROCESSED"],
+      sale_status: ["COMPLETED", "VOIDED", "REFUNDED"],
+      shift_status: ["OPEN", "CLOSED"],
       surface_type: ["EMPTY", "EMPTY_WITH_CARPET", "WITH_CONSTRUCTION"],
       system_role: ["ADMIN", "MANAGER", "BUILDER"],
+      vat_rate: ["VAT_0", "VAT_6", "VAT_12", "VAT_21"],
     },
   },
 } as const

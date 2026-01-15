@@ -41,6 +41,12 @@ import Templates from "./pages/Templates";
 import Home from "./pages/Home";
 import NotFound from "./pages/NotFound";
 
+// POS Pages
+import PosSell from "./pages/pos/PosSell";
+import PosProducts from "./pages/pos/PosProducts";
+import PosShifts from "./pages/pos/PosShifts";
+import PosReports from "./pages/pos/PosReports";
+
 const queryClient = new QueryClient();
 
 function AuthRedirect({ children }: { children: React.ReactNode }) {
@@ -82,6 +88,12 @@ const App = () => (
               <Route path="/events/:id/settings" element={<EventSettings />} />
               <Route path="/events/:id/users" element={<EventUsers />} />
               <Route path="/events/:id/requests" element={<EventRequests />} />
+              
+              {/* POS Routes */}
+              <Route path="/events/:id/pos" element={<PosSell />} />
+              <Route path="/events/:id/pos/products" element={<PosProducts />} />
+              <Route path="/events/:id/pos/shifts" element={<PosShifts />} />
+              <Route path="/events/:id/pos/reports" element={<PosReports />} />
               
               {/* System routes */}
               <Route path="/users" element={<Users />} />
