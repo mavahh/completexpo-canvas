@@ -65,6 +65,19 @@ export default function PublicFloorplan() {
   const [isPanning, setIsPanning] = useState(false);
   const [panStart, setPanStart] = useState({ x: 0, y: 0 });
   
+  // Touch gesture state
+  const touchStateRef = useRef<{
+    lastTouchDistance: number | null;
+    lastTouchCenter: { x: number; y: number } | null;
+    initialZoom: number;
+    initialPan: { x: number; y: number };
+  }>({
+    lastTouchDistance: null,
+    lastTouchCenter: null,
+    initialZoom: 1,
+    initialPan: { x: 0, y: 0 },
+  });
+  
   // Filters
   const [statusFilters, setStatusFilters] = useState<Record<StandStatus, boolean>>({
     AVAILABLE: true,
@@ -366,6 +379,90 @@ export default function PublicFloorplan() {
     setIsPanning(false);
   };
 
+  // Touch event handlers for pinch-to-zoom
+  const getTouchDistance = (touches: React.TouchList) => {
+    if (touches.length < 2) return null;
+    const dx = touches[0].clientX - touches[1].clientX;
+    const dy = touches[0].clientY - touches[1].clientY;
+    return Math.sqrt(dx * dx + dy * dy);
+  };
+
+  const getTouchCenter = (touches: React.TouchList) => {
+    if (touches.length < 2) {
+      return { x: touches[0].clientX, y: touches[0].clientY };
+    }
+    return {
+      x: (touches[0].clientX + touches[1].clientX) / 2,
+      y: (touches[0].clientY + touches[1].clientY) / 2,
+    };
+  };
+
+  const handleTouchStart = useCallback((e: React.TouchEvent) => {
+    if (e.touches.length === 1) {
+      // Single touch - panning
+      setIsPanning(true);
+      setPanStart({ x: e.touches[0].clientX - pan.x, y: e.touches[0].clientY - pan.y });
+      touchStateRef.current.lastTouchDistance = null;
+      touchStateRef.current.lastTouchCenter = null;
+    } else if (e.touches.length === 2) {
+      // Pinch zoom
+      e.preventDefault();
+      const distance = getTouchDistance(e.touches);
+      const center = getTouchCenter(e.touches);
+      touchStateRef.current.lastTouchDistance = distance;
+      touchStateRef.current.lastTouchCenter = center;
+      touchStateRef.current.initialZoom = zoom;
+      touchStateRef.current.initialPan = { ...pan };
+      setIsPanning(false);
+    }
+  }, [pan, zoom]);
+
+  const handleTouchMove = useCallback((e: React.TouchEvent) => {
+    if (e.touches.length === 1 && isPanning && touchStateRef.current.lastTouchDistance === null) {
+      // Single touch panning
+      setPan({ 
+        x: e.touches[0].clientX - panStart.x, 
+        y: e.touches[0].clientY - panStart.y 
+      });
+    } else if (e.touches.length === 2) {
+      // Pinch zoom
+      e.preventDefault();
+      const currentDistance = getTouchDistance(e.touches);
+      const currentCenter = getTouchCenter(e.touches);
+      const { lastTouchDistance, lastTouchCenter, initialZoom, initialPan } = touchStateRef.current;
+
+      if (lastTouchDistance && currentDistance && lastTouchCenter) {
+        const scale = currentDistance / lastTouchDistance;
+        const newZoom = Math.max(0.2, Math.min(3, initialZoom * scale));
+        
+        // Adjust pan to keep the pinch center stationary
+        const zoomRatio = newZoom / zoom;
+        const centerDeltaX = currentCenter.x - lastTouchCenter.x;
+        const centerDeltaY = currentCenter.y - lastTouchCenter.y;
+        
+        setZoom(newZoom);
+        setPan({
+          x: pan.x * zoomRatio + centerDeltaX,
+          y: pan.y * zoomRatio + centerDeltaY,
+        });
+      }
+    }
+  }, [isPanning, panStart, zoom, pan]);
+
+  const handleTouchEnd = useCallback((e: React.TouchEvent) => {
+    if (e.touches.length === 0) {
+      setIsPanning(false);
+      touchStateRef.current.lastTouchDistance = null;
+      touchStateRef.current.lastTouchCenter = null;
+    } else if (e.touches.length === 1) {
+      // Switched from pinch to single touch
+      setIsPanning(true);
+      setPanStart({ x: e.touches[0].clientX - pan.x, y: e.touches[0].clientY - pan.y });
+      touchStateRef.current.lastTouchDistance = null;
+      touchStateRef.current.lastTouchCenter = null;
+    }
+  }, [pan]);
+
   // Loading state
   if (loading) {
     return (
@@ -611,6 +708,9 @@ export default function PublicFloorplan() {
             onMouseDown={handleMouseDown}
             onMouseMove={handleMouseMove}
             onMouseUp={handleMouseUp}
+            onTouchStart={handleTouchStart}
+            onTouchMove={handleTouchMove}
+            onTouchEnd={handleTouchEnd}
           />
 
           {/* Mobile: Selected stand indicator */}

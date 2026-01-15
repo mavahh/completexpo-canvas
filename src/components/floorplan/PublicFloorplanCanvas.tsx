@@ -1,4 +1,4 @@
-import { forwardRef } from 'react';
+import { forwardRef, useRef, useCallback } from 'react';
 import { STAND_STATUS_CONFIG, StandStatus } from './StandLegend';
 import { StandServiceIcons } from './StandServiceIcons';
 import type { Stand, Floorplan, ExhibitorServices } from '@/types';
@@ -17,6 +17,9 @@ interface PublicFloorplanCanvasProps {
   onMouseDown: (e: React.MouseEvent) => void;
   onMouseMove: (e: React.MouseEvent) => void;
   onMouseUp: () => void;
+  onTouchStart?: (e: React.TouchEvent) => void;
+  onTouchMove?: (e: React.TouchEvent) => void;
+  onTouchEnd?: (e: React.TouchEvent) => void;
 }
 
 export const PublicFloorplanCanvas = forwardRef<HTMLDivElement, PublicFloorplanCanvasProps>(
@@ -33,14 +36,20 @@ export const PublicFloorplanCanvas = forwardRef<HTMLDivElement, PublicFloorplanC
     onMouseDown,
     onMouseMove,
     onMouseUp,
+    onTouchStart,
+    onTouchMove,
+    onTouchEnd,
   }, ref) => {
     return (
       <div
-        className="flex-1 overflow-hidden bg-muted relative"
+        className="flex-1 overflow-hidden bg-muted relative touch-none"
         onMouseMove={onMouseMove}
         onMouseUp={onMouseUp}
         onMouseLeave={onMouseUp}
         onMouseDown={onMouseDown}
+        onTouchStart={onTouchStart}
+        onTouchMove={onTouchMove}
+        onTouchEnd={onTouchEnd}
         style={{ cursor: isPanning ? 'grabbing' : 'grab' }}
       >
         <div
