@@ -83,12 +83,11 @@ export const MODULES: ModuleConfig[] = [
   {
     id: 'pos',
     title: 'POS',
-    description: 'Point of Sale en betalingen',
+    description: 'Point of Sale en kassa',
     icon: CreditCard,
-    requiresEvent: false,
-    buildHref: () => '#',
-    requiredPermission: null,
-    comingSoon: true,
+    requiresEvent: true,
+    buildHref: (eventId) => `/events/${eventId}/pos`,
+    requiredPermission: 'POS_VIEW',
   },
   {
     id: 'crm',
