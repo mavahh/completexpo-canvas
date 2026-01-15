@@ -1,7 +1,7 @@
 import { useEffect, useState, useRef, useCallback } from 'react';
 import { useParams } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
-import { Loader2, Lock, Copy, Check, Download, Search, ZoomIn, ZoomOut, AlertTriangle, Crosshair, RotateCcw } from 'lucide-react';
+import { Loader2, Lock, Copy, Check, Download, Search, ZoomIn, ZoomOut, AlertTriangle, Crosshair, RotateCcw, Filter, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -13,6 +13,9 @@ import { PublicStandDetails } from '@/components/floorplan/PublicStandDetails';
 import { PublicHallSelector } from '@/components/floorplan/PublicHallSelector';
 import { PublicStatusFilters } from '@/components/floorplan/PublicStatusFilters';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerClose } from '@/components/ui/drawer';
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
+import { useIsMobile } from '@/hooks/use-mobile';
 import type { Stand, Floorplan, ExhibitorServices, ExhibitorContact } from '@/types';
 import { jsPDF } from 'jspdf';
 
@@ -36,6 +39,7 @@ interface EventData {
 export default function PublicFloorplan() {
   const { token } = useParams<{ token: string }>();
   const { toast } = useToast();
+  const isMobile = useIsMobile();
   const canvasRef = useRef<HTMLDivElement>(null);
   const canvasContainerRef = useRef<HTMLDivElement>(null);
 
@@ -68,6 +72,8 @@ export default function PublicFloorplan() {
     SOLD: true,
     BLOCKED: true,
   });
+  const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
+  const [mobileDetailsOpen, setMobileDetailsOpen] = useState(false);
 
   // Computed
   const floorplan = floorplans.find(f => f.id === selectedFloorplanId);
@@ -337,6 +343,10 @@ export default function PublicFloorplan() {
 
   const handleStandClick = (standId: string) => {
     setSelectedStandId(standId === selectedStandId ? null : standId);
+    // Open mobile details drawer when a stand is clicked
+    if (isMobile && standId !== selectedStandId) {
+      setMobileDetailsOpen(true);
+    }
   };
 
   const handleMouseDown = (e: React.MouseEvent) => {
@@ -386,22 +396,22 @@ export default function PublicFloorplan() {
   return (
     <div className="min-h-screen bg-background flex flex-col">
       {/* Top bar */}
-      <header className="border-b border-border bg-card px-4 py-3 flex items-center gap-4 flex-wrap">
+      <header className="border-b border-border bg-card px-4 py-3 flex items-center gap-2 sm:gap-4 flex-wrap">
         {/* Logo & Event name */}
-        <div className="flex items-center gap-3">
-          <div className="w-9 h-9 bg-primary rounded-lg flex items-center justify-center">
-            <span className="text-primary-foreground font-bold text-sm">C</span>
+        <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-shrink">
+          <div className="w-8 h-8 sm:w-9 sm:h-9 bg-primary rounded-lg flex items-center justify-center flex-shrink-0">
+            <span className="text-primary-foreground font-bold text-xs sm:text-sm">C</span>
           </div>
-          <div>
-            <h1 className="font-semibold text-foreground text-sm sm:text-base">{event?.name}</h1>
+          <div className="min-w-0">
+            <h1 className="font-semibold text-foreground text-sm sm:text-base truncate">{event?.name}</h1>
             {event?.location && (
-              <p className="text-xs text-muted-foreground">{event.location}</p>
+              <p className="text-xs text-muted-foreground truncate">{event.location}</p>
             )}
           </div>
         </div>
 
-        {/* Search */}
-        <div className="flex-1 min-w-[200px] max-w-md">
+        {/* Search - hidden on mobile, shown in filter sheet */}
+        <div className="flex-1 min-w-[200px] max-w-md hidden sm:block">
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
             <Input
@@ -414,7 +424,59 @@ export default function PublicFloorplan() {
         </div>
 
         {/* Actions */}
-        <div className="flex items-center gap-2 flex-wrap">
+        <div className="flex items-center gap-1 sm:gap-2 flex-wrap ml-auto">
+          {/* Mobile filter button */}
+          <Sheet open={mobileFiltersOpen} onOpenChange={setMobileFiltersOpen}>
+            <SheetTrigger asChild>
+              <Button
+                variant="outline"
+                size="sm"
+                className="lg:hidden"
+              >
+                <Filter className="w-4 h-4" />
+                <span className="hidden sm:inline ml-1">Filters</span>
+              </Button>
+            </SheetTrigger>
+            <SheetContent side="left" className="w-[300px] p-0">
+              <SheetHeader className="p-4 border-b border-border">
+                <SheetTitle>Filters</SheetTitle>
+              </SheetHeader>
+              <div className="p-4 space-y-4">
+                {/* Mobile search */}
+                <div className="relative sm:hidden">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                  <Input
+                    placeholder="Zoek stands, exposanten..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="pl-9 bg-muted/50 border-border"
+                  />
+                </div>
+                
+                {/* Hall selector */}
+                {floorplans.length > 1 && (
+                  <PublicHallSelector
+                    floorplans={floorplans}
+                    selectedFloorplanId={selectedFloorplanId}
+                    stands={stands}
+                    statusCounts={statusCounts}
+                    onSelect={(id) => {
+                      setSelectedFloorplanId(id);
+                      setMobileFiltersOpen(false);
+                    }}
+                  />
+                )}
+
+                {/* Status filters */}
+                <PublicStatusFilters
+                  filters={statusFilters}
+                  counts={statusCounts}
+                  onChange={(status, checked) => setStatusFilters(prev => ({ ...prev, [status]: checked }))}
+                />
+              </div>
+            </SheetContent>
+          </Sheet>
+
           {publicLink?.allow_downloads && (
             <>
               <Button
@@ -423,17 +485,18 @@ export default function PublicFloorplan() {
                 onClick={handleExportPNG}
                 disabled={exporting}
               >
-                <Download className="w-4 h-4 mr-1" />
-                <span className="hidden sm:inline">PNG</span>
+                <Download className="w-4 h-4" />
+                <span className="hidden sm:inline ml-1">PNG</span>
               </Button>
               <Button
                 variant="outline"
                 size="sm"
                 onClick={handleExportPDF}
                 disabled={exporting}
+                className="hidden sm:flex"
               >
                 <Download className="w-4 h-4 mr-1" />
-                <span className="hidden sm:inline">PDF</span>
+                PDF
               </Button>
             </>
           )}
@@ -445,16 +508,16 @@ export default function PublicFloorplan() {
             {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
             <span className="hidden sm:inline ml-1">Link</span>
           </Button>
-          <Badge variant="secondary" className="gap-1">
+          <Badge variant="secondary" className="gap-1 hidden sm:flex">
             <Lock className="w-3 h-3" />
-            <span className="hidden sm:inline">Publieke weergave</span>
+            Publieke weergave
           </Badge>
         </div>
       </header>
 
       {/* Main content */}
-      <div className="flex flex-1 overflow-hidden">
-        {/* Left sidebar - Halls & Filters */}
+      <div className="flex flex-1 overflow-hidden relative">
+        {/* Left sidebar - Halls & Filters (desktop only) */}
         <aside className="w-64 border-r border-border bg-card p-4 hidden lg:flex flex-col gap-4 overflow-y-auto">
           {/* Hall selector */}
           {floorplans.length > 1 && (
@@ -478,12 +541,13 @@ export default function PublicFloorplan() {
         {/* Canvas */}
         <div ref={canvasContainerRef} className="flex-1 overflow-hidden relative">
           {/* Zoom controls */}
-          <div className="absolute top-4 left-4 z-10 flex gap-2">
+          <div className="absolute top-4 left-4 z-10 flex gap-1 sm:gap-2">
             <Tooltip>
               <TooltipTrigger asChild>
                 <Button
                   variant="secondary"
                   size="icon"
+                  className="w-8 h-8 sm:w-10 sm:h-10"
                   onClick={() => setZoom(z => Math.min(3, z + 0.2))}
                 >
                   <ZoomIn className="w-4 h-4" />
@@ -496,6 +560,7 @@ export default function PublicFloorplan() {
                 <Button
                   variant="secondary"
                   size="icon"
+                  className="w-8 h-8 sm:w-10 sm:h-10"
                   onClick={() => setZoom(z => Math.max(0.2, z - 0.2))}
                 >
                   <ZoomOut className="w-4 h-4" />
@@ -508,6 +573,7 @@ export default function PublicFloorplan() {
                 <Button
                   variant="secondary"
                   size="icon"
+                  className="w-8 h-8 sm:w-10 sm:h-10"
                   onClick={fitToScreen}
                 >
                   <Crosshair className="w-4 h-4" />
@@ -520,6 +586,7 @@ export default function PublicFloorplan() {
                 <Button
                   variant="secondary"
                   size="icon"
+                  className="w-8 h-8 sm:w-10 sm:h-10 hidden sm:flex"
                   onClick={resetZoom}
                 >
                   <RotateCcw className="w-4 h-4" />
@@ -527,7 +594,7 @@ export default function PublicFloorplan() {
               </TooltipTrigger>
               <TooltipContent>Reset naar 100%</TooltipContent>
             </Tooltip>
-            <Badge variant="secondary">{Math.round(zoom * 100)}%</Badge>
+            <Badge variant="secondary" className="hidden sm:flex">{Math.round(zoom * 100)}%</Badge>
           </div>
 
           <PublicFloorplanCanvas
@@ -545,9 +612,19 @@ export default function PublicFloorplan() {
             onMouseMove={handleMouseMove}
             onMouseUp={handleMouseUp}
           />
+
+          {/* Mobile: Selected stand indicator */}
+          {isMobile && selectedStand && !mobileDetailsOpen && (
+            <Button
+              className="absolute bottom-4 left-1/2 -translate-x-1/2 z-10 shadow-lg"
+              onClick={() => setMobileDetailsOpen(true)}
+            >
+              Stand {selectedStand.label} bekijken
+            </Button>
+          )}
         </div>
 
-        {/* Right sidebar - Stand details */}
+        {/* Right sidebar - Stand details (desktop/tablet only) */}
         <aside className="w-80 border-l border-border bg-card p-4 hidden md:flex flex-col overflow-y-auto">
           <PublicStandDetails
             stand={selectedStand}
@@ -556,6 +633,31 @@ export default function PublicFloorplan() {
           />
         </aside>
       </div>
+
+      {/* Mobile: Bottom drawer for stand details */}
+      <Drawer open={mobileDetailsOpen} onOpenChange={setMobileDetailsOpen}>
+        <DrawerContent className="max-h-[85vh]">
+          <DrawerHeader className="border-b border-border pb-4">
+            <div className="flex items-center justify-between">
+              <DrawerTitle>
+                {selectedStand ? `Stand ${selectedStand.label}` : 'Stand details'}
+              </DrawerTitle>
+              <DrawerClose asChild>
+                <Button variant="ghost" size="icon" className="h-8 w-8">
+                  <X className="h-4 w-4" />
+                </Button>
+              </DrawerClose>
+            </div>
+          </DrawerHeader>
+          <div className="p-4 overflow-y-auto">
+            <PublicStandDetails
+              stand={selectedStand}
+              exhibitor={selectedExhibitor}
+              services={selectedServices}
+            />
+          </div>
+        </DrawerContent>
+      </Drawer>
     </div>
   );
 }
