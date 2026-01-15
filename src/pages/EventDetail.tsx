@@ -18,7 +18,8 @@ import {
   Calendar,
   MapPin,
   LayoutGrid,
-  ClipboardList
+  ClipboardList,
+  Receipt
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { nl } from 'date-fns/locale';
@@ -41,6 +42,7 @@ interface Stats {
 const tiles = [
   { id: 'handbook', label: 'Handboek', icon: FileText, description: 'Documentatie en richtlijnen', disabled: true },
   { id: 'floorplan', label: 'Plattegrond', icon: Layout, path: 'floorplan', description: 'Beheer hal layouts' },
+  { id: 'pos', label: 'POS', icon: Receipt, path: 'pos', description: 'Kassa & verkoop' },
   { id: 'orders', label: 'Bestellingen', icon: ShoppingCart, description: 'Exposant bestellingen', disabled: true },
   { id: 'exhibitors', label: 'Exposanten', icon: Users, path: 'exhibitors', description: 'Beheer deelnemers' },
   { id: 'requests', label: 'Aanvragen', icon: ClipboardList, path: 'requests', description: 'Stand aanvragen' },
