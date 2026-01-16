@@ -21,10 +21,10 @@ export function StandDistributionChart({ data }: StandDistributionProps) {
   const total = data.available + data.reserved + data.sold + data.blocked;
   
   const chartData = [
-    { name: 'Confirmed', value: data.sold, color: COLORS.sold },
-    { name: 'Pending', value: data.reserved, color: COLORS.reserved },
-    { name: 'Available', value: data.available, color: COLORS.available },
-    { name: 'Blocked', value: data.blocked, color: COLORS.blocked },
+    { name: 'Verkocht', value: data.sold, color: COLORS.sold },
+    { name: 'Gereserveerd', value: data.reserved, color: COLORS.reserved },
+    { name: 'Beschikbaar', value: data.available, color: COLORS.available },
+    { name: 'Geblokkeerd', value: data.blocked, color: COLORS.blocked },
   ].filter(item => item.value > 0);
 
   const getPercentage = (value: number) => {
@@ -34,7 +34,7 @@ export function StandDistributionChart({ data }: StandDistributionProps) {
 
   return (
     <Card className="p-6">
-      <h3 className="font-semibold text-foreground mb-4">Stand Distribution</h3>
+      <h3 className="font-semibold text-foreground mb-4">Stand Verdeling</h3>
       
       <div className="h-64">
         <ResponsiveContainer width="100%" height="100%">

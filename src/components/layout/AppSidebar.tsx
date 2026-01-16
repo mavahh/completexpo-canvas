@@ -46,22 +46,22 @@ interface NavItem {
 
 const navItems: NavItem[] = [
   { title: 'Dashboard', icon: LayoutDashboard, path: '/dashboard', module: 'DASHBOARD' },
-  { title: 'Events', icon: Calendar, path: '/events', module: 'EVENTS' },
-  { title: 'Floorplan', icon: Map, path: '/floorplan', requiresEvent: true },
-  { title: 'Exhibitors', icon: Users, path: '/exhibitors', requiresEvent: true },
-  { title: 'POS', icon: Receipt, path: '/pos', requiresEvent: true, permission: 'POS_VIEW' },
+  { title: 'Evenementen', icon: Calendar, path: '/events', module: 'EVENTS' },
+  { title: 'Plattegrond', icon: Map, path: '/floorplan', requiresEvent: true },
+  { title: 'Exposanten', icon: Users, path: '/exhibitors', requiresEvent: true },
+  { title: 'Kassa (POS)', icon: Receipt, path: '/pos', requiresEvent: true, permission: 'POS_VIEW' },
   { title: 'Exposanten Bibliotheek', icon: Library, path: '/exhibitor-library', requiresAccount: true },
-  { title: 'Templates', icon: FileText, path: '/templates', requiresAccount: true },
+  { title: 'Sjablonen', icon: FileText, path: '/templates', requiresAccount: true },
   { title: 'Team', icon: UsersRound, path: '/team', requiresAccount: true },
-  { title: 'Settings', icon: Settings, path: '/settings', requiresEvent: true },
+  { title: 'Instellingen', icon: Settings, path: '/settings', requiresEvent: true },
 ];
 
 const adminItems: NavItem[] = [
   { title: 'Admin Dashboard', icon: Shield, path: '/admin', superAdminOnly: true },
   { title: 'Accounts', icon: Building2, path: '/admin/accounts', superAdminOnly: true },
-  { title: 'Demo Requests', icon: FileText, path: '/admin/demo-requests', superAdminOnly: true },
-  { title: 'Email Outbox', icon: Mail, path: '/admin/email-outbox', superAdminOnly: true },
-  { title: 'Users', icon: Users, path: '/admin/users', superAdminOnly: true },
+  { title: 'Demo Aanvragen', icon: FileText, path: '/admin/demo-requests', superAdminOnly: true },
+  { title: 'E-mail Outbox', icon: Mail, path: '/admin/email-outbox', superAdminOnly: true },
+  { title: 'Gebruikers', icon: Users, path: '/admin/users', superAdminOnly: true },
 ];
 
 export function AppSidebar() {
@@ -185,7 +185,7 @@ export function AppSidebar() {
           <SidebarGroup className="mt-6">
             <div className="px-3 mb-2">
               <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                Administration
+                Beheer
               </span>
             </div>
             <SidebarGroupContent>
@@ -224,10 +224,10 @@ export function AppSidebar() {
         <div className="mb-4 p-3 rounded-lg bg-sidebar-accent/50">
           <div className="flex items-center gap-2 mb-1">
             <div className="w-2 h-2 rounded-full bg-success animate-pulse" />
-            <span className="text-xs font-medium text-foreground">System Status</span>
+            <span className="text-xs font-medium text-foreground">Systeem Status</span>
           </div>
           <p className="text-xs text-muted-foreground">
-            All systems operational
+            Alle systemen operationeel
           </p>
         </div>
 
@@ -237,7 +237,7 @@ export function AppSidebar() {
           className="flex items-center gap-3 px-3 py-2.5 w-full rounded-lg text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-colors"
         >
           <LogOut className="w-5 h-5" />
-          <span className="font-medium">Logout</span>
+          <span className="font-medium">Uitloggen</span>
         </button>
       </SidebarFooter>
     </Sidebar>

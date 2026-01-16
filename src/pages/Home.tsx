@@ -38,11 +38,11 @@ export default function Home() {
 
   const getModuleState = (module: typeof MODULES[0]) => {
     if (module.comingSoon) {
-      return { isDisabled: true, reason: 'Coming soon' };
+      return { isDisabled: true, reason: 'Binnenkort beschikbaar' };
     }
     
     if (module.requiresEvent && !eventId) {
-      return { isDisabled: true, reason: 'Selecteer eerst een event' };
+      return { isDisabled: true, reason: 'Selecteer eerst een evenement' };
     }
     
     return { isDisabled: false, reason: undefined };

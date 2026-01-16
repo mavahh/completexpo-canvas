@@ -33,7 +33,7 @@ export function QuickActionsCard({ eventId }: QuickActionsCardProps) {
           const isDisabled = needsEvent || !hasAccess;
           
           const disabledReason = needsEvent 
-            ? 'Selecteer eerst een event' 
+            ? 'Selecteer eerst een evenement' 
             : !hasAccess 
               ? 'Geen toegang' 
               : undefined;
