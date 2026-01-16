@@ -48,6 +48,7 @@ import PosProducts from "./pages/pos/PosProducts";
 import PosShifts from "./pages/pos/PosShifts";
 import PosReports from "./pages/pos/PosReports";
 import PosSettings from "./pages/pos/PosSettings";
+import PosKiosk from "./pages/pos/PosKiosk";
 
 const queryClient = new QueryClient();
 
@@ -118,6 +119,9 @@ const App = () => (
               <Route path="/admin/email-outbox" element={<AdminEmailOutbox />} />
               <Route path="/admin/users" element={<AdminUsers />} />
             </Route>
+
+            {/* POS Kiosk - fullscreen, outside dashboard layout */}
+            <Route path="/events/:id/pos/kiosk" element={<ProtectedRoute><PosKiosk /></ProtectedRoute>} />
 
             {/* Fullscreen editor - outside dashboard layout */}
             <Route path="/events/:id/floorplan/editor" element={<ProtectedRoute><FloorplanFullscreenEditor /></ProtectedRoute>} />
