@@ -132,7 +132,7 @@ export function usePosShifts(eventId: string | null, registerId?: string | null)
     try {
       let query = supabase
         .from('pos_shifts')
-        .select('*, register:pos_registers(*), opened_by:profiles!pos_shifts_opened_by_user_id_fkey(name, email), closed_by:profiles!pos_shifts_closed_by_user_id_fkey(name, email)')
+        .select('*, register:pos_registers(*)')
         .eq('event_id', eventId)
         .order('opened_at', { ascending: false });
 

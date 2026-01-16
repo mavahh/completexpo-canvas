@@ -1,9 +1,9 @@
 import { useState } from 'react';
 import { useParams } from 'react-router-dom';
-import { Plus, Pencil, Trash2, Package, Tag, Monitor } from 'lucide-react';
+import { Plus, Pencil, Trash2, Package, Tag } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { usePosPermissions } from '@/hooks/usePosPermissions';
-import { usePosCategories, usePosProducts, usePosRegisters } from '@/hooks/usePosData';
+import { usePosCategories, usePosProducts } from '@/hooks/usePosData';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -13,9 +13,8 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { toast } from 'sonner';
 import { ProductDialog } from '@/components/pos/ProductDialog';
 import { CategoryDialog } from '@/components/pos/CategoryDialog';
-import { RegisterDialog } from '@/components/pos/RegisterDialog';
 import { formatCents, VAT_RATE_LABELS } from '@/types/pos';
-import type { PosProduct, PosCategory, PosRegister } from '@/types/pos';
+import type { PosProduct, PosCategory } from '@/types/pos';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -33,20 +32,16 @@ export default function PosProducts() {
   
   const { categories, loading: catLoading, refetch: refetchCategories } = usePosCategories(eventId || null);
   const { products, loading: prodLoading, refetch: refetchProducts } = usePosProducts(eventId || null);
-  const { registers, loading: regLoading, refetch: refetchRegisters } = usePosRegisters(eventId || null);
 
   const [editProduct, setEditProduct] = useState<PosProduct | null>(null);
   const [showProductDialog, setShowProductDialog] = useState(false);
   
   const [editCategory, setEditCategory] = useState<PosCategory | null>(null);
   const [showCategoryDialog, setShowCategoryDialog] = useState(false);
-  
-  const [editRegister, setEditRegister] = useState<PosRegister | null>(null);
-  const [showRegisterDialog, setShowRegisterDialog] = useState(false);
 
-  const [deleteItem, setDeleteItem] = useState<{ type: 'product' | 'category' | 'register'; id: string; name: string } | null>(null);
+  const [deleteItem, setDeleteItem] = useState<{ type: 'product' | 'category'; id: string; name: string } | null>(null);
 
-  const isLoading = permLoading || catLoading || prodLoading || regLoading;
+  const isLoading = permLoading || catLoading || prodLoading;
 
   const handleDelete = async () => {
     if (!deleteItem) return;
@@ -60,9 +55,6 @@ export default function PosProducts() {
       } else if (deleteItem.type === 'category') {
         ({ error } = await supabase.from('pos_categories').delete().eq('id', deleteItem.id));
         if (!error) refetchCategories();
-      } else if (deleteItem.type === 'register') {
-        ({ error } = await supabase.from('pos_registers').delete().eq('id', deleteItem.id));
-        if (!error) refetchRegisters();
       }
 
       if (error) throw error;
@@ -98,7 +90,10 @@ export default function PosProducts() {
 
   return (
     <div className="p-6 space-y-6">
-      <h1 className="text-2xl font-bold">POS Productbeheer</h1>
+      <div>
+        <h1 className="text-2xl font-bold">Producten</h1>
+        <p className="text-muted-foreground">Beheer producten en categorieën voor het POS systeem</p>
+      </div>
 
       <Tabs defaultValue="products">
         <TabsList>
@@ -109,10 +104,6 @@ export default function PosProducts() {
           <TabsTrigger value="categories" className="gap-2">
             <Tag className="h-4 w-4" />
             Categorieën
-          </TabsTrigger>
-          <TabsTrigger value="registers" className="gap-2">
-            <Monitor className="h-4 w-4" />
-            Kassa's
           </TabsTrigger>
         </TabsList>
 
@@ -127,27 +118,27 @@ export default function PosProducts() {
               </Button>
             </CardHeader>
             <CardContent>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Naam</TableHead>
-                    <TableHead>SKU</TableHead>
-                    <TableHead>Categorie</TableHead>
-                    <TableHead>Prijs</TableHead>
-                    <TableHead>BTW</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead className="w-[100px]">Acties</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {products.length === 0 ? (
+              {products.length === 0 ? (
+                <div className="text-center py-8 text-muted-foreground">
+                  <Package className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                  <p>Geen producten gevonden</p>
+                  <p className="text-sm">Voeg je eerste product toe om te beginnen</p>
+                </div>
+              ) : (
+                <Table>
+                  <TableHeader>
                     <TableRow>
-                      <TableCell colSpan={7} className="text-center text-muted-foreground">
-                        Geen producten gevonden
-                      </TableCell>
+                      <TableHead>Naam</TableHead>
+                      <TableHead>SKU</TableHead>
+                      <TableHead>Categorie</TableHead>
+                      <TableHead>Prijs</TableHead>
+                      <TableHead>BTW</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead className="w-[100px]">Acties</TableHead>
                     </TableRow>
-                  ) : (
-                    products.map(product => (
+                  </TableHeader>
+                  <TableBody>
+                    {products.map(product => (
                       <TableRow key={product.id}>
                         <TableCell className="font-medium">{product.name}</TableCell>
                         <TableCell>{product.sku || '-'}</TableCell>
@@ -179,10 +170,10 @@ export default function PosProducts() {
                           </div>
                         </TableCell>
                       </TableRow>
-                    ))
-                  )}
-                </TableBody>
-              </Table>
+                    ))}
+                  </TableBody>
+                </Table>
+              )}
             </CardContent>
           </Card>
         </TabsContent>
@@ -198,24 +189,24 @@ export default function PosProducts() {
               </Button>
             </CardHeader>
             <CardContent>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Naam</TableHead>
-                    <TableHead>Volgorde</TableHead>
-                    <TableHead>Producten</TableHead>
-                    <TableHead className="w-[100px]">Acties</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {categories.length === 0 ? (
+              {categories.length === 0 ? (
+                <div className="text-center py-8 text-muted-foreground">
+                  <Tag className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                  <p>Geen categorieën gevonden</p>
+                  <p className="text-sm">Categorieën helpen producten te organiseren</p>
+                </div>
+              ) : (
+                <Table>
+                  <TableHeader>
                     <TableRow>
-                      <TableCell colSpan={4} className="text-center text-muted-foreground">
-                        Geen categorieën gevonden
-                      </TableCell>
+                      <TableHead>Naam</TableHead>
+                      <TableHead>Volgorde</TableHead>
+                      <TableHead>Producten</TableHead>
+                      <TableHead className="w-[100px]">Acties</TableHead>
                     </TableRow>
-                  ) : (
-                    categories.map(cat => (
+                  </TableHeader>
+                  <TableBody>
+                    {categories.map(cat => (
                       <TableRow key={cat.id}>
                         <TableCell className="font-medium">{cat.name}</TableCell>
                         <TableCell>{cat.sort_order}</TableCell>
@@ -240,75 +231,10 @@ export default function PosProducts() {
                           </div>
                         </TableCell>
                       </TableRow>
-                    ))
-                  )}
-                </TableBody>
-              </Table>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        {/* Registers Tab */}
-        <TabsContent value="registers">
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between">
-              <CardTitle>Kassa's</CardTitle>
-              <Button onClick={() => { setEditRegister(null); setShowRegisterDialog(true); }} className="gap-2">
-                <Plus className="h-4 w-4" />
-                Kassa toevoegen
-              </Button>
-            </CardHeader>
-            <CardContent>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Naam</TableHead>
-                    <TableHead>Locatie</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead className="w-[100px]">Acties</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {registers.length === 0 ? (
-                    <TableRow>
-                      <TableCell colSpan={4} className="text-center text-muted-foreground">
-                        Geen kassa's gevonden
-                      </TableCell>
-                    </TableRow>
-                  ) : (
-                    registers.map(reg => (
-                      <TableRow key={reg.id}>
-                        <TableCell className="font-medium">{reg.name}</TableCell>
-                        <TableCell>{reg.location || '-'}</TableCell>
-                        <TableCell>
-                          <Badge variant={reg.is_active ? 'default' : 'secondary'}>
-                            {reg.is_active ? 'Actief' : 'Inactief'}
-                          </Badge>
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex gap-1">
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              onClick={() => { setEditRegister(reg); setShowRegisterDialog(true); }}
-                            >
-                              <Pencil className="h-4 w-4" />
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="text-destructive"
-                              onClick={() => setDeleteItem({ type: 'register', id: reg.id, name: reg.name })}
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    ))
-                  )}
-                </TableBody>
-              </Table>
+                    ))}
+                  </TableBody>
+                </Table>
+              )}
             </CardContent>
           </Card>
         </TabsContent>
@@ -335,17 +261,6 @@ export default function PosProducts() {
         onSuccess={() => {
           refetchCategories();
           setShowCategoryDialog(false);
-        }}
-      />
-
-      <RegisterDialog
-        open={showRegisterDialog}
-        onOpenChange={setShowRegisterDialog}
-        eventId={eventId || ''}
-        register={editRegister}
-        onSuccess={() => {
-          refetchRegisters();
-          setShowRegisterDialog(false);
         }}
       />
 

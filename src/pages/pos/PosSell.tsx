@@ -25,7 +25,7 @@ export default function PosSell() {
   const { id: eventId } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { loading: permLoading, canView, canSell, canOpenShift } = usePosPermissions(eventId || null);
+  const { canSell, canOpenShift } = usePosPermissions(eventId || null);
   
   const { categories, loading: catLoading } = usePosCategories(eventId || null);
   const { products, loading: prodLoading } = usePosProducts(eventId || null, true);
@@ -186,7 +186,7 @@ export default function PosSell() {
   };
 
   // Loading state
-  const isLoading = permLoading || catLoading || prodLoading || regLoading || shiftLoading;
+  const isLoading = catLoading || prodLoading || regLoading || shiftLoading;
 
   if (isLoading) {
     return (
@@ -207,18 +207,6 @@ export default function PosSell() {
     );
   }
 
-  if (!canView) {
-    return (
-      <div className="p-6">
-        <Card>
-          <CardContent className="p-12 text-center">
-            <p className="text-muted-foreground">Je hebt geen toegang tot de POS module.</p>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
-
   const selectedRegister = registers.find(r => r.id === selectedRegisterId);
 
   return (
@@ -228,11 +216,11 @@ export default function PosSell() {
         <div className="flex items-center gap-4">
           <h1 className="text-xl font-semibold">POS Verkoop</h1>
           
-          {registers.length === 0 && canOpenShift && (
+          {registers.length === 0 && (
             <div className="flex items-center gap-2">
               <Badge variant="destructive">Geen kassa's</Badge>
-              <Button variant="link" className="p-0 h-auto" onClick={() => navigate(`/events/${eventId}/pos/products`)}>
-                Maak eerst een kassa aan
+              <Button variant="link" className="p-0 h-auto" onClick={() => navigate(`/events/${eventId}/pos/settings`)}>
+                Ga naar Instellingen
               </Button>
             </div>
           )}
@@ -329,8 +317,8 @@ export default function PosSell() {
               {registers.length === 0 && (
                 <p className="text-sm text-muted-foreground">
                   Er zijn nog geen kassa's.{' '}
-                  <Button variant="link" className="p-0 h-auto" onClick={() => navigate(`/events/${eventId}/pos/products`)}>
-                    Ga naar Products → Registers
+                  <Button variant="link" className="p-0 h-auto" onClick={() => navigate(`/events/${eventId}/pos/settings`)}>
+                    Ga naar Instellingen
                   </Button>
                   {' '}om een kassa aan te maken.
                 </p>
