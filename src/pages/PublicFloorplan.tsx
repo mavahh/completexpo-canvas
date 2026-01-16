@@ -182,6 +182,8 @@ export default function PublicFloorplan() {
   }, [floorplan, stands.length, hasFitted, loading, fitToScreen]);
 
   const fetchData = async () => {
+    console.log('PublicFloorplan: fetchData called with token:', token);
+    
     if (!token) {
       setError('Geen token opgegeven');
       setLoading(false);
@@ -189,11 +191,15 @@ export default function PublicFloorplan() {
     }
 
     try {
+      console.log('PublicFloorplan: Fetching public link...');
       // Fetch public link via RPC (bypasses RLS safely)
       const { data: linkData, error: linkError } = await supabase
         .rpc('get_public_link_by_token', { _token: token });
 
+      console.log('PublicFloorplan: Link result:', { linkData, linkError });
+
       if (linkError || !linkData || linkData.length === 0) {
+        console.error('PublicFloorplan: Link error or no data', linkError);
         setError('Deze link is niet beschikbaar of ongeldig');
         setLoading(false);
         return;
@@ -636,7 +642,7 @@ export default function PublicFloorplan() {
         </aside>
 
         {/* Canvas */}
-        <div ref={canvasContainerRef} className="flex-1 overflow-hidden relative">
+        <div ref={canvasContainerRef} className="flex-1 overflow-hidden relative min-h-[400px]">
           {/* Zoom controls */}
           <div className="absolute top-4 left-4 z-10 flex gap-1 sm:gap-2">
             <Tooltip>
