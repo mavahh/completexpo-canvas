@@ -228,6 +228,21 @@ export default function PosSell() {
         <div className="flex items-center gap-4">
           <h1 className="text-xl font-semibold">POS Verkoop</h1>
           
+          {registers.length === 0 && canOpenShift && (
+            <div className="flex items-center gap-2">
+              <Badge variant="destructive">Geen kassa's</Badge>
+              <Button variant="link" className="p-0 h-auto" onClick={() => navigate(`/events/${eventId}/pos/products`)}>
+                Maak eerst een kassa aan
+              </Button>
+            </div>
+          )}
+
+          {registers.length === 1 && (
+            <span className="text-sm text-muted-foreground">
+              Kassa: {registers[0].name}
+            </span>
+          )}
+
           {registers.length > 1 && (
             <Select value={selectedRegisterId || ''} onValueChange={setSelectedRegisterId}>
               <SelectTrigger className="w-[200px]">
@@ -245,13 +260,15 @@ export default function PosSell() {
         </div>
 
         <div className="flex items-center gap-3">
-          <Badge variant={openShift ? 'default' : 'secondary'} className="gap-2">
-            <div className={cn(
-              'w-2 h-2 rounded-full',
-              openShift ? 'bg-green-500 animate-pulse' : 'bg-muted-foreground'
-            )} />
-            {openShift ? 'Shift OPEN' : 'Shift GESLOTEN'}
-          </Badge>
+          {registers.length > 0 && (
+            <Badge variant={openShift ? 'default' : 'secondary'} className="gap-2">
+              <div className={cn(
+                'w-2 h-2 rounded-full',
+                openShift ? 'bg-green-500 animate-pulse' : 'bg-muted-foreground'
+              )} />
+              {openShift ? 'Shift OPEN' : 'Shift GESLOTEN'}
+            </Badge>
+          )}
 
           {canOpenShift && !openShift && selectedRegisterId && (
             <Button onClick={() => setShowOpenShift(true)}>
@@ -307,8 +324,22 @@ export default function PosSell() {
           </div>
 
           {!openShift && (
-            <div className="bg-muted/50 rounded-lg p-8 text-center">
+            <div className="bg-muted/50 rounded-lg p-8 text-center space-y-3">
               <p className="text-muted-foreground">Open eerst een shift om te kunnen verkopen.</p>
+              {registers.length === 0 && (
+                <p className="text-sm text-muted-foreground">
+                  Er zijn nog geen kassa's.{' '}
+                  <Button variant="link" className="p-0 h-auto" onClick={() => navigate(`/events/${eventId}/pos/products`)}>
+                    Ga naar Products → Registers
+                  </Button>
+                  {' '}om een kassa aan te maken.
+                </p>
+              )}
+              {registers.length > 0 && canOpenShift && (
+                <Button onClick={() => setShowOpenShift(true)}>
+                  Shift openen
+                </Button>
+              )}
             </div>
           )}
 
