@@ -35,7 +35,7 @@ export const MODULES: ModuleConfig[] = [
   },
   {
     id: 'floorplan',
-    title: 'Floorplan Builder',
+    title: 'Plattegrond',
     description: 'Ontwerp en beheer je beursplattegronden',
     icon: LayoutGrid,
     requiresEvent: true,
@@ -72,7 +72,7 @@ export const MODULES: ModuleConfig[] = [
   },
   {
     id: 'insights',
-    title: 'Insights',
+    title: 'Rapportages',
     description: 'Bekijk statistieken en rapportages',
     icon: BarChart3,
     requiresEvent: true,
@@ -82,8 +82,8 @@ export const MODULES: ModuleConfig[] = [
   },
   {
     id: 'pos',
-    title: 'POS',
-    description: 'Point of Sale en kassa',
+    title: 'Kassa',
+    description: 'Point of Sale en kassabeheer',
     icon: CreditCard,
     requiresEvent: true,
     buildHref: (eventId) => `/events/${eventId}/pos`,

@@ -73,16 +73,16 @@ export function BookingVelocityChart({ eventId }: BookingVelocityProps) {
   return (
     <Card className="p-6">
       <div className="flex items-center justify-between mb-6">
-        <h3 className="font-semibold text-foreground">Booking Velocity</h3>
+        <h3 className="font-semibold text-foreground">Boekingssnelheid</h3>
         <Select value={period} onValueChange={setPeriod}>
-          <SelectTrigger className="w-[140px]">
-            <SelectValue placeholder="Select period" />
+          <SelectTrigger className="w-[160px]">
+            <SelectValue placeholder="Selecteer periode" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="30days">Last 30 Days</SelectItem>
-            <SelectItem value="3months">Last 3 Months</SelectItem>
-            <SelectItem value="6months">Last 6 Months</SelectItem>
-            <SelectItem value="1year">Last Year</SelectItem>
+            <SelectItem value="30days">Laatste 30 dagen</SelectItem>
+            <SelectItem value="3months">Laatste 3 maanden</SelectItem>
+            <SelectItem value="6months">Laatste 6 maanden</SelectItem>
+            <SelectItem value="1year">Laatste jaar</SelectItem>
           </SelectContent>
         </Select>
       </div>

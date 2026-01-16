@@ -34,7 +34,7 @@ export function ModuleTile({ module, eventId, isDisabled, disabledReason }: Modu
           variant="secondary" 
           className="absolute top-2 right-2 sm:top-3 sm:right-3 text-[10px] sm:text-xs"
         >
-          Coming soon
+          Binnenkort
         </Badge>
       )}
       

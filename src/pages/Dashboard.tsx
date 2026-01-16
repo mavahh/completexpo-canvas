@@ -141,30 +141,30 @@ export default function Dashboard() {
       {/* KPI Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <KPICard
-          title="Total Exhibitors"
+          title="Totaal Exposanten"
           value={totalExhibitors.toLocaleString()}
-          subtitle={eventId ? "This event" : "All events"}
+          subtitle={eventId ? "Dit evenement" : "Alle evenementen"}
           icon={Users}
           trend={{ value: 12.5, isPositive: true }}
         />
         <KPICard
-          title="Floor Space Sold"
+          title="Standruimte Verkocht"
           value={`${soldPercentage}%`}
-          subtitle={`${totalStands.toLocaleString()} stands total`}
+          subtitle={`${totalStands.toLocaleString()} stands totaal`}
           icon={LayoutGrid}
           trend={{ value: 4.2, isPositive: true }}
         />
         <KPICard
-          title="Total Revenue"
+          title="Totale Omzet"
           value="€4.2M"
-          subtitle="Gross income"
+          subtitle="Bruto inkomsten"
           icon={Euro}
           trend={{ value: 8.1, isPositive: true }}
         />
         <KPICard
-          title="Pending Orders"
+          title="Openstaande Reserveringen"
           value={standStats.reserved}
-          subtitle="Requires attention"
+          subtitle="Vereist aandacht"
           icon={ShoppingCart}
           trend={{ value: 2.4, isPositive: false }}
         />
@@ -182,22 +182,22 @@ export default function Dashboard() {
       {!eventId && (
         <div>
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-semibold text-foreground">Your Events</h2>
+            <h2 className="text-lg font-semibold text-foreground">Jouw Evenementen</h2>
             <Link to="/events/new">
               <Button size="sm">
                 <Plus className="w-4 h-4 mr-1" />
-                New Event
+                Nieuw Evenement
               </Button>
             </Link>
           </div>
 
           {events.length === 0 ? (
             <div className="text-center py-12 bg-card rounded-xl border border-border">
-              <p className="text-muted-foreground mb-4">No events yet</p>
+              <p className="text-muted-foreground mb-4">Nog geen evenementen</p>
               <Link to="/events/new">
                 <Button>
                   <Plus className="w-4 h-4 mr-2" />
-                  Create your first event
+                  Maak je eerste evenement
                 </Button>
               </Link>
             </div>
@@ -222,7 +222,7 @@ export default function Dashboard() {
           {events.length > 6 && (
             <div className="text-center mt-4">
               <Link to="/events">
-                <Button variant="outline">View all events</Button>
+                <Button variant="outline">Bekijk alle evenementen</Button>
               </Link>
             </div>
           )}

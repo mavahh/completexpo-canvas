@@ -36,9 +36,9 @@ export function EventCard({
   const bgGradient = gradient || gradients[Math.floor(Math.random() * gradients.length)];
 
   const statusConfig = {
-    active: { label: 'ACTIVE', className: 'bg-success text-success-foreground' },
-    draft: { label: 'DRAFT', className: 'bg-warning text-warning-foreground' },
-    completed: { label: 'COMPLETED', className: 'bg-muted text-muted-foreground' },
+    active: { label: 'ACTIEF', className: 'bg-success text-success-foreground' },
+    draft: { label: 'CONCEPT', className: 'bg-warning text-warning-foreground' },
+    completed: { label: 'AFGEROND', className: 'bg-muted text-muted-foreground' },
   };
 
   return (
@@ -64,7 +64,7 @@ export function EventCard({
         {/* Footer */}
         <div className="p-4 flex items-center justify-between bg-card">
           <div>
-            <p className="text-xs text-muted-foreground uppercase tracking-wider">Exhibitors</p>
+            <p className="text-xs text-muted-foreground uppercase tracking-wider">Exposanten</p>
             <p className="text-lg font-bold text-foreground">{exhibitorCount}</p>
           </div>
           <ChevronRight className="w-5 h-5 text-muted-foreground group-hover:text-primary group-hover:translate-x-1 transition-all" />
