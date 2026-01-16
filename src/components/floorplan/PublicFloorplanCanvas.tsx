@@ -50,7 +50,7 @@ export const PublicFloorplanCanvas = forwardRef<HTMLDivElement, PublicFloorplanC
 
     return (
       <div
-        className="flex-1 overflow-hidden bg-muted relative touch-none"
+        className="flex-1 overflow-hidden bg-muted relative touch-none h-full min-h-[500px]"
         onMouseMove={onMouseMove}
         onMouseUp={onMouseUp}
         onMouseLeave={onMouseUp}
