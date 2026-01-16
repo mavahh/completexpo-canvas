@@ -40,6 +40,14 @@ export const PublicFloorplanCanvas = forwardRef<HTMLDivElement, PublicFloorplanC
     onTouchMove,
     onTouchEnd,
   }, ref) => {
+    if (!floorplan) {
+      return (
+        <div className="flex-1 flex items-center justify-center bg-muted">
+          <p className="text-muted-foreground">Geen plattegrond beschikbaar</p>
+        </div>
+      );
+    }
+
     return (
       <div
         className="flex-1 overflow-hidden bg-muted relative touch-none"
@@ -54,10 +62,10 @@ export const PublicFloorplanCanvas = forwardRef<HTMLDivElement, PublicFloorplanC
       >
         <div
           ref={ref}
-          className="canvas-bg absolute bg-editor-canvas border border-border rounded"
+          className="absolute bg-card border border-border rounded shadow-sm"
           style={{
-            width: floorplan?.width || 1200,
-            height: floorplan?.height || 800,
+            width: floorplan.width,
+            height: floorplan.height,
             transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoom})`,
             transformOrigin: '0 0',
           }}

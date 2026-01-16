@@ -59,9 +59,9 @@ export default function PublicFloorplan() {
   const [exporting, setExporting] = useState(false);
   const [hasFitted, setHasFitted] = useState(false);
   
-  // Canvas state
-  const [zoom, setZoom] = useState(1);
-  const [pan, setPan] = useState({ x: 0, y: 0 });
+  // Canvas state - start with reasonable initial pan to show content
+  const [zoom, setZoom] = useState(0.8);
+  const [pan, setPan] = useState({ x: 50, y: 50 });
   const [isPanning, setIsPanning] = useState(false);
   const [panStart, setPanStart] = useState({ x: 0, y: 0 });
   
@@ -189,67 +189,58 @@ export default function PublicFloorplan() {
     }
 
     try {
-      // Fetch public link
+      // Fetch public link via RPC (bypasses RLS safely)
       const { data: linkData, error: linkError } = await supabase
-        .from('event_public_links')
-        .select('*')
-        .eq('token', token)
-        .eq('enabled', true)
-        .single();
+        .rpc('get_public_link_by_token', { _token: token });
 
-      if (linkError || !linkData) {
+      if (linkError || !linkData || linkData.length === 0) {
         setError('Deze link is niet beschikbaar of ongeldig');
         setLoading(false);
         return;
       }
 
-      setPublicLink(linkData);
+      const link = linkData[0] as PublicLinkData;
+      setPublicLink(link);
 
-      // Fetch event
+      // Fetch event via RPC
       const { data: eventData } = await supabase
-        .from('events')
-        .select('id, name, location, start_date, end_date')
-        .eq('id', linkData.event_id)
-        .single();
+        .rpc('get_public_event_by_token', { _token: token });
 
-      if (eventData) {
-        setEvent(eventData);
+      if (eventData && eventData.length > 0) {
+        setEvent(eventData[0] as EventData);
       }
 
-      // Fetch floorplans
+      // Fetch floorplans via RPC
       const { data: floorplanData } = await supabase
-        .from('floorplans')
-        .select('*')
-        .eq('event_id', linkData.event_id)
-        .order('name');
+        .rpc('get_public_floorplans_by_token', { _token: token });
 
       if (floorplanData && floorplanData.length > 0) {
-        setFloorplans(floorplanData);
+        setFloorplans(floorplanData as Floorplan[]);
         // Select default or first floorplan
-        const defaultId = linkData.default_floorplan_id || floorplanData[0].id;
+        const defaultId = link.default_floorplan_id || floorplanData[0].id;
         setSelectedFloorplanId(defaultId);
       }
 
-      // Fetch exhibitors
+      // Fetch exhibitors via RPC (only id and name for public view)
       const { data: exhibitorData } = await supabase
-        .from('exhibitors')
-        .select('id, name, contact_name, email, phone')
-        .eq('event_id', linkData.event_id);
+        .rpc('get_public_exhibitors_by_token', { _token: token });
 
       if (exhibitorData) {
-        setExhibitors(exhibitorData);
+        // Map to ExhibitorContact shape with nulls for private fields
+        setExhibitors(exhibitorData.map((e: { id: string; name: string }) => ({
+          id: e.id,
+          name: e.name,
+          contact_name: null,
+          email: null,
+          phone: null,
+        })));
 
-        // Fetch exhibitor services
-        const exhibitorIds = exhibitorData.map(e => e.id);
-        if (exhibitorIds.length > 0) {
-          const { data: servicesData } = await supabase
-            .from('exhibitor_services')
-            .select('*')
-            .in('exhibitor_id', exhibitorIds);
+        // Fetch exhibitor services via RPC
+        const { data: servicesData } = await supabase
+          .rpc('get_public_exhibitor_services_by_token', { _token: token });
 
-          if (servicesData) {
-            setExhibitorServices(servicesData);
-          }
+        if (servicesData) {
+          setExhibitorServices(servicesData as ExhibitorServices[]);
         }
       }
 
@@ -262,15 +253,24 @@ export default function PublicFloorplan() {
   };
 
   const fetchStands = async () => {
-    if (!selectedFloorplanId) return;
+    if (!selectedFloorplanId || !token) return;
 
-    const { data: standsData } = await supabase
-      .from('stands')
-      .select('*')
-      .eq('floorplan_id', selectedFloorplanId);
+    // Fetch stands via RPC (bypasses RLS safely)
+    const { data: standsData, error: standsError } = await supabase
+      .rpc('get_public_stands_by_token', { 
+        _token: token, 
+        _floorplan_id: selectedFloorplanId 
+      });
+
+    console.log('Fetched stands:', standsData?.length, standsError);
 
     if (standsData) {
-      setStands(standsData as Stand[]);
+      // Ensure status is uppercase to match StandStatus type
+      const normalizedStands = standsData.map((s: any) => ({
+        ...s,
+        status: (s.status as string).toUpperCase() as StandStatus,
+      }));
+      setStands(normalizedStands as Stand[]);
     }
   };
 
