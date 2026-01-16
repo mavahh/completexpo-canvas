@@ -1,6 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useParams, useSearchParams, useNavigate } from 'react-router-dom';
-import { Search, Plus, Minus, Trash2, ShoppingCart, CreditCard, Banknote, CircleDollarSign, Receipt, ArrowLeft, Printer } from 'lucide-react';
+import { Search, Plus, Minus, Trash2, ShoppingCart, CreditCard, Banknote, CircleDollarSign, Receipt, ArrowLeft, Printer, Wifi } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/lib/auth';
 import { usePosCategories, usePosProducts, usePosShifts } from '@/hooks/usePosData';
@@ -26,7 +26,7 @@ export default function PosKiosk() {
   
   const { categories, loading: catLoading } = usePosCategories(eventId || null);
   const { products, loading: prodLoading } = usePosProducts(eventId || null, true);
-  const { shifts, loading: shiftLoading } = usePosShifts(eventId || null);
+  const { shifts, loading: shiftLoading, refetch: refetchShifts } = usePosShifts(eventId || null);
   
   const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
@@ -39,10 +39,101 @@ export default function PosKiosk() {
   
   const [showReceipt, setShowReceipt] = useState(false);
   const [lastSale, setLastSale] = useState<PosSale | null>(null);
+  
+  // Realtime connection status
+  const [realtimeConnected, setRealtimeConnected] = useState(false);
+  
+  // Recent sales for this shift (realtime updated)
+  const [recentSales, setRecentSales] = useState<PosSale[]>([]);
 
   // Find the current shift
   const currentShift = shifts.find(s => s.id === shiftId);
   const registerName = currentShift?.register?.name || 'Kassa';
+
+  // Realtime subscription for sales and shift updates
+  useEffect(() => {
+    if (!shiftId || !eventId) return;
+
+    const channel = supabase
+      .channel(`pos-kiosk-${shiftId}`)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'pos_sales',
+          filter: `shift_id=eq.${shiftId}`,
+        },
+        async (payload) => {
+          console.log('Realtime sale update:', payload);
+          
+          if (payload.eventType === 'INSERT') {
+            // Fetch complete sale with items
+            const { data: completeSale } = await supabase
+              .from('pos_sales')
+              .select('*, items:pos_sale_items(*)')
+              .eq('id', (payload.new as any).id)
+              .single();
+            
+            if (completeSale) {
+              setRecentSales(prev => [completeSale as unknown as PosSale, ...prev.slice(0, 9)]);
+              // Only show toast if it's not our own sale
+              if ((payload.new as any).sold_by_user_id !== user?.id) {
+                toast.info(`Nieuwe verkoop: ${formatCents((payload.new as any).total_cents)}`);
+              }
+            }
+          } else if (payload.eventType === 'UPDATE') {
+            setRecentSales(prev => 
+              prev.map(s => s.id === (payload.new as any).id 
+                ? { ...s, ...(payload.new as any) } 
+                : s
+              )
+            );
+          }
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'pos_shifts',
+          filter: `id=eq.${shiftId}`,
+        },
+        (payload) => {
+          console.log('Realtime shift update:', payload);
+          // Refetch shifts when the current shift is updated (e.g., closed)
+          refetchShifts();
+          
+          if ((payload.new as any).status === 'CLOSED') {
+            toast.warning('Deze shift is gesloten op een ander apparaat');
+          }
+        }
+      )
+      .subscribe((status) => {
+        console.log('Realtime subscription status:', status);
+        setRealtimeConnected(status === 'SUBSCRIBED');
+      });
+
+    // Fetch initial recent sales
+    const fetchRecentSales = async () => {
+      const { data } = await supabase
+        .from('pos_sales')
+        .select('*, items:pos_sale_items(*)')
+        .eq('shift_id', shiftId)
+        .order('created_at', { ascending: false })
+        .limit(10);
+      
+      if (data) {
+        setRecentSales(data as unknown as PosSale[]);
+      }
+    };
+    fetchRecentSales();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [shiftId, eventId, user?.id, refetchShifts]);
 
   // Filter products
   const filteredProducts = products.filter(p => {
@@ -222,13 +313,24 @@ export default function PosKiosk() {
           </Button>
           <div>
             <h1 className="font-semibold">{registerName}</h1>
-            <p className="text-xs text-muted-foreground">Shift actief</p>
+            <p className="text-xs text-muted-foreground">
+              Shift actief • {recentSales.length} verkopen
+            </p>
           </div>
         </div>
-        <Badge variant="default" className="gap-2">
-          <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
-          OPEN
-        </Badge>
+        <div className="flex items-center gap-2">
+          <Badge 
+            variant={realtimeConnected ? "default" : "secondary"} 
+            className="gap-2"
+          >
+            <Wifi className={cn("h-3 w-3", realtimeConnected ? "text-green-300" : "text-muted-foreground")} />
+            {realtimeConnected ? 'Live' : 'Verbinden...'}
+          </Badge>
+          <Badge variant="default" className="gap-2">
+            <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
+            OPEN
+          </Badge>
+        </div>
       </div>
 
       {/* Main content - full height */}
