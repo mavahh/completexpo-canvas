@@ -143,8 +143,40 @@ export function usePosShifts(eventId: string | null, registerId?: string | null)
       const { data, error } = await query;
 
       if (error) throw error;
+
+      // Fetch profile info for opened_by
+      const shiftsWithProfiles = await Promise.all(
+        (data || []).map(async (shift) => {
+          let opened_by = null;
+          let closed_by = null;
+
+          if (shift.opened_by_user_id) {
+            const { data: profile } = await supabase
+              .from('profiles')
+              .select('name, email')
+              .eq('id', shift.opened_by_user_id)
+              .single();
+            opened_by = profile;
+          }
+
+          if (shift.closed_by_user_id) {
+            const { data: profile } = await supabase
+              .from('profiles')
+              .select('name, email')
+              .eq('id', shift.closed_by_user_id)
+              .single();
+            closed_by = profile;
+          }
+
+          return {
+            ...shift,
+            opened_by,
+            closed_by,
+          };
+        })
+      );
       
-      const shiftsData = (data || []) as unknown as PosShift[];
+      const shiftsData = shiftsWithProfiles as unknown as PosShift[];
       setShifts(shiftsData);
       
       // Find open shift for selected register
