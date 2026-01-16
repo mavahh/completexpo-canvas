@@ -42,10 +42,12 @@ import Home from "./pages/Home";
 import NotFound from "./pages/NotFound";
 
 // POS Pages
+import PosLayout from "./pages/pos/PosLayout";
 import PosSell from "./pages/pos/PosSell";
 import PosProducts from "./pages/pos/PosProducts";
 import PosShifts from "./pages/pos/PosShifts";
 import PosReports from "./pages/pos/PosReports";
+import PosSettings from "./pages/pos/PosSettings";
 
 const queryClient = new QueryClient();
 
@@ -89,11 +91,14 @@ const App = () => (
               <Route path="/events/:id/users" element={<EventUsers />} />
               <Route path="/events/:id/requests" element={<EventRequests />} />
               
-              {/* POS Routes */}
-              <Route path="/events/:id/pos" element={<PosSell />} />
-              <Route path="/events/:id/pos/products" element={<PosProducts />} />
-              <Route path="/events/:id/pos/shifts" element={<PosShifts />} />
-              <Route path="/events/:id/pos/reports" element={<PosReports />} />
+              {/* POS Routes with nested layout */}
+              <Route path="/events/:id/pos" element={<PosLayout />}>
+                <Route index element={<PosSell />} />
+                <Route path="products" element={<PosProducts />} />
+                <Route path="shifts" element={<PosShifts />} />
+                <Route path="reports" element={<PosReports />} />
+                <Route path="settings" element={<PosSettings />} />
+              </Route>
               
               {/* System routes */}
               <Route path="/users" element={<Users />} />

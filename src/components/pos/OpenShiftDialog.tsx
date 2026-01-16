@@ -49,6 +49,7 @@ export function OpenShiftDialog({
 
       toast.success('Shift geopend');
       setOpeningCash('0');
+      onOpenChange(false);
       onSuccess();
     } catch (error) {
       console.error('Error opening shift:', error);

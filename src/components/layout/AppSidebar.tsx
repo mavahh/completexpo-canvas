@@ -118,7 +118,7 @@ export function AppSidebar() {
     if (item.requiresEvent && eventId) {
       if (item.path === '/floorplan') return `/events/${eventId}/floorplan`;
       if (item.path === '/exhibitors') return `/events/${eventId}/exhibitors`;
-      if (item.path === '/pos') return `/events/${eventId}/pos`;
+      if (item.path === '/pos') return `/events/${eventId}/pos/settings`;
       if (item.path === '/settings') return `/events/${eventId}/settings`;
     }
     return item.path;
