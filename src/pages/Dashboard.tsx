@@ -23,7 +23,12 @@ export default function Dashboard() {
     sold: 0,
     blocked: 0,
   });
+  const [totalRevenue, setTotalRevenue] = useState(0);
+  const [posRevenue, setPosRevenue] = useState(0);
   const [loading, setLoading] = useState(true);
+
+  // Price per m² for stand revenue calculation
+  const PRICE_PER_SQM = 150;
 
   useEffect(() => {
     fetchData();
@@ -66,8 +71,8 @@ export default function Dashboard() {
       setTotalExhibitors(total);
     }
 
-    // Fetch stand statistics (filtered if eventId is set)
-    let standsQuery = supabase.from('stands').select('status, event_id');
+    // Fetch stand statistics with dimensions (filtered if eventId is set)
+    let standsQuery = supabase.from('stands').select('status, event_id, width, height');
     
     if (eventId) {
       standsQuery = standsQuery.eq('event_id', eventId);
@@ -83,6 +88,8 @@ export default function Dashboard() {
         blocked: 0,
       };
 
+      let soldArea = 0;
+
       standsData.forEach((stand) => {
         const status = (stand.status as string || 'AVAILABLE').toLowerCase() as keyof StandStats;
         if (status in stats) {
@@ -90,9 +97,33 @@ export default function Dashboard() {
         } else {
           stats.available++;
         }
+        
+        // Calculate revenue for sold stands (width/height are in pixels, assume 1px = 0.01m for display)
+        if (status === 'sold') {
+          const areaM2 = (stand.width * stand.height) / 10000; // Convert to m²
+          soldArea += areaM2;
+        }
       });
 
       setStandStats(stats);
+      setTotalRevenue(soldArea * PRICE_PER_SQM);
+    }
+
+    // Fetch POS revenue
+    let posQuery = supabase
+      .from('pos_sales')
+      .select('total_cents')
+      .eq('status', 'COMPLETED');
+    
+    if (eventId) {
+      posQuery = posQuery.eq('event_id', eventId);
+    }
+    
+    const { data: posData } = await posQuery;
+    
+    if (posData) {
+      const posTotal = posData.reduce((sum, sale) => sum + (sale.total_cents || 0), 0) / 100;
+      setPosRevenue(posTotal);
     }
 
     setLoading(false);
@@ -156,8 +187,8 @@ export default function Dashboard() {
         />
         <KPICard
           title="Totale Omzet"
-          value="€4.2M"
-          subtitle="Bruto inkomsten"
+          value={`€${((totalRevenue + posRevenue) / 1000).toFixed(1)}K`}
+          subtitle={`Standruimte: €${totalRevenue.toLocaleString('nl-NL')} | POS: €${posRevenue.toLocaleString('nl-NL')}`}
           icon={Euro}
           trend={{ value: 8.1, isPositive: true }}
         />
