@@ -1456,6 +1456,79 @@ export type Database = {
         Args: { _account_id: string; _user_id: string }
         Returns: Database["public"]["Enums"]["account_role"]
       }
+      get_public_event_by_token: {
+        Args: { _token: string }
+        Returns: {
+          end_date: string
+          id: string
+          location: string
+          name: string
+          start_date: string
+        }[]
+      }
+      get_public_exhibitor_services_by_token: {
+        Args: { _token: string }
+        Returns: {
+          carpet_included: boolean
+          construction_booked: boolean
+          exhibitor_id: string
+          light_points: number
+          notes: string
+          power_option: Database["public"]["Enums"]["power_option"]
+          surface_type: Database["public"]["Enums"]["surface_type"]
+          water_connections: number
+        }[]
+      }
+      get_public_exhibitors_by_token: {
+        Args: { _token: string }
+        Returns: {
+          id: string
+          name: string
+        }[]
+      }
+      get_public_floorplans_by_token: {
+        Args: { _token: string }
+        Returns: {
+          background_opacity: number
+          background_url: string
+          event_id: string
+          grid_size: number
+          hall: string
+          height: number
+          id: string
+          name: string
+          width: number
+        }[]
+      }
+      get_public_link_by_token: {
+        Args: { _token: string }
+        Returns: {
+          allow_downloads: boolean
+          default_floorplan_id: string
+          enabled: boolean
+          event_id: string
+          id: string
+          token: string
+        }[]
+      }
+      get_public_stands_by_token: {
+        Args: { _floorplan_id: string; _token: string }
+        Returns: {
+          color: string
+          event_id: string
+          exhibitor_id: string
+          floorplan_id: string
+          height: number
+          id: string
+          label: string
+          notes: string
+          rotation: number
+          status: string
+          width: number
+          x: number
+          y: number
+        }[]
+      }
       get_user_account_id: { Args: { _user_id: string }; Returns: string }
       has_event_permission: {
         Args: { _event_id: string; _permission_name: string; _user_id: string }
