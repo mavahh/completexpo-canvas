@@ -20,6 +20,7 @@ interface ProductDialogProps {
 }
 
 const VAT_OPTIONS: VatRate[] = ['VAT_0', 'VAT_6', 'VAT_12', 'VAT_21'];
+const NONE_CATEGORY_VALUE = '__none__';
 
 export function ProductDialog({
   open,
@@ -133,13 +134,16 @@ export function ProductDialog({
 
           <div>
             <Label htmlFor="category">Categorie</Label>
-            <Select value={categoryId} onValueChange={setCategoryId}>
+            <Select
+              value={categoryId || NONE_CATEGORY_VALUE}
+              onValueChange={(v) => setCategoryId(v === NONE_CATEGORY_VALUE ? '' : v)}
+            >
               <SelectTrigger>
                 <SelectValue placeholder="Geen categorie" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">Geen categorie</SelectItem>
-                {categories.map(cat => (
+                <SelectItem value={NONE_CATEGORY_VALUE}>Geen categorie</SelectItem>
+                {categories.map((cat) => (
                   <SelectItem key={cat.id} value={cat.id}>
                     {cat.name}
                   </SelectItem>
@@ -147,6 +151,7 @@ export function ProductDialog({
               </SelectContent>
             </Select>
           </div>
+
 
           <div className="grid grid-cols-2 gap-4">
             <div>
