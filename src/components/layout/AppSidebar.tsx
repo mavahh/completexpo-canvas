@@ -136,20 +136,20 @@ export function AppSidebar() {
   };
 
   return (
-    <Sidebar className="border-r border-sidebar-border bg-sidebar-background">
-      <SidebarHeader className="p-4 border-b border-sidebar-border">
-        <Link to="/dashboard" className="flex items-center gap-3">
-          <div className="w-10 h-10 bg-primary rounded-xl flex items-center justify-center shadow-md">
-            <span className="text-primary-foreground font-bold text-lg">C</span>
+    <Sidebar collapsible="icon" className="border-r border-sidebar-border bg-sidebar-background">
+      <SidebarHeader className="p-3 md:p-4 border-b border-sidebar-border">
+        <Link to="/dashboard" className="flex items-center gap-2 md:gap-3">
+          <div className="w-9 h-9 md:w-10 md:h-10 bg-primary rounded-xl flex items-center justify-center shadow-md flex-shrink-0">
+            <span className="text-primary-foreground font-bold text-base md:text-lg">C</span>
           </div>
-          <div>
-            <span className="font-semibold text-foreground block">ComplexExpo</span>
-            <span className="text-xs text-muted-foreground uppercase tracking-wider">Exhibition Suite</span>
+          <div className="group-data-[collapsible=icon]:hidden">
+            <span className="font-semibold text-foreground block text-sm md:text-base">ComplexExpo</span>
+            <span className="text-[10px] md:text-xs text-muted-foreground uppercase tracking-wider">Exhibition Suite</span>
           </div>
         </Link>
       </SidebarHeader>
 
-      <SidebarContent className="px-3 py-4">
+      <SidebarContent className="px-2 md:px-3 py-3 md:py-4">
         <SidebarGroup>
           <SidebarGroupContent>
             <SidebarMenu>
@@ -159,18 +159,18 @@ export function AppSidebar() {
                 
                 return (
                   <SidebarMenuItem key={item.path}>
-                    <SidebarMenuButton asChild>
+                    <SidebarMenuButton asChild tooltip={item.title}>
                       <Link
                         to={getHref(item)}
                         className={cn(
-                          'flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200',
+                          'flex items-center gap-2 md:gap-3 px-2.5 md:px-3 py-2 md:py-2.5 rounded-lg transition-all duration-200',
                           active
                             ? 'bg-primary text-primary-foreground shadow-md'
                             : 'text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground'
                         )}
                       >
-                        <item.icon className="w-5 h-5" />
-                        <span className="font-medium">{item.title}</span>
+                        <item.icon className="w-4 h-4 md:w-5 md:h-5 flex-shrink-0" />
+                        <span className="font-medium text-sm md:text-base group-data-[collapsible=icon]:hidden">{item.title}</span>
                       </Link>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
@@ -182,9 +182,9 @@ export function AppSidebar() {
 
         {/* Admin section */}
         {(isSuperAdmin || isSystemAdmin) && (
-          <SidebarGroup className="mt-6">
-            <div className="px-3 mb-2">
-              <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+          <SidebarGroup className="mt-4 md:mt-6">
+            <div className="px-2.5 md:px-3 mb-2 group-data-[collapsible=icon]:hidden">
+              <span className="text-[10px] md:text-xs font-medium text-muted-foreground uppercase tracking-wider">
                 Beheer
               </span>
             </div>
@@ -196,18 +196,18 @@ export function AppSidebar() {
                   
                   return (
                     <SidebarMenuItem key={item.path}>
-                      <SidebarMenuButton asChild>
+                      <SidebarMenuButton asChild tooltip={item.title}>
                         <Link
                           to={item.path}
                           className={cn(
-                            'flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200',
+                            'flex items-center gap-2 md:gap-3 px-2.5 md:px-3 py-2 md:py-2.5 rounded-lg transition-all duration-200',
                             active
                               ? 'bg-primary text-primary-foreground shadow-md'
                               : 'text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground'
                           )}
                         >
-                          <item.icon className="w-5 h-5" />
-                          <span className="font-medium">{item.title}</span>
+                          <item.icon className="w-4 h-4 md:w-5 md:h-5 flex-shrink-0" />
+                          <span className="font-medium text-sm md:text-base group-data-[collapsible=icon]:hidden">{item.title}</span>
                         </Link>
                       </SidebarMenuButton>
                     </SidebarMenuItem>
@@ -219,14 +219,14 @@ export function AppSidebar() {
         )}
       </SidebarContent>
 
-      <SidebarFooter className="p-4 border-t border-sidebar-border">
-        {/* System Status */}
-        <div className="mb-4 p-3 rounded-lg bg-sidebar-accent/50">
+      <SidebarFooter className="p-3 md:p-4 border-t border-sidebar-border">
+        {/* System Status - hidden in collapsed mode */}
+        <div className="mb-3 md:mb-4 p-2 md:p-3 rounded-lg bg-sidebar-accent/50 group-data-[collapsible=icon]:hidden">
           <div className="flex items-center gap-2 mb-1">
             <div className="w-2 h-2 rounded-full bg-success animate-pulse" />
-            <span className="text-xs font-medium text-foreground">Systeem Status</span>
+            <span className="text-[10px] md:text-xs font-medium text-foreground">Systeem Status</span>
           </div>
-          <p className="text-xs text-muted-foreground">
+          <p className="text-[10px] md:text-xs text-muted-foreground">
             Alle systemen operationeel
           </p>
         </div>
@@ -234,10 +234,10 @@ export function AppSidebar() {
         {/* Logout */}
         <button
           onClick={handleSignOut}
-          className="flex items-center gap-3 px-3 py-2.5 w-full rounded-lg text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-colors"
+          className="flex items-center justify-center md:justify-start gap-2 md:gap-3 px-2.5 md:px-3 py-2 md:py-2.5 w-full rounded-lg text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-colors"
         >
-          <LogOut className="w-5 h-5" />
-          <span className="font-medium">Uitloggen</span>
+          <LogOut className="w-4 h-4 md:w-5 md:h-5 flex-shrink-0" />
+          <span className="font-medium text-sm md:text-base group-data-[collapsible=icon]:hidden">Uitloggen</span>
         </button>
       </SidebarFooter>
     </Sidebar>

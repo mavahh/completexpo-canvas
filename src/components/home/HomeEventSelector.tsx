@@ -67,29 +67,29 @@ export function HomeEventSelector({ selectedEventId, onEventChange }: HomeEventS
 
   return (
     <Card className="bg-card border-border">
-      <CardContent className="p-4">
-        <div className="flex items-center justify-between gap-4">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
-              <Calendar className="w-5 h-5 text-primary" />
+      <CardContent className="p-3 sm:p-4">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4">
+          <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+            <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
+              <Calendar className="w-4 h-4 sm:w-5 sm:h-5 text-primary" />
             </div>
-            <div>
-              <p className="text-sm text-muted-foreground">Huidig event</p>
+            <div className="min-w-0 flex-1">
+              <p className="text-xs sm:text-sm text-muted-foreground">Huidig event</p>
               {selectedEvent ? (
-                <div className="flex items-center gap-2">
-                  <p className="font-medium text-foreground">{selectedEvent.name}</p>
+                <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2">
+                  <p className="font-medium text-sm sm:text-base text-foreground truncate">{selectedEvent.name}</p>
                   {selectedEvent.location && (
-                    <span className="flex items-center gap-1 text-xs text-muted-foreground">
-                      <MapPin className="w-3 h-3" />
-                      {selectedEvent.location}
+                    <span className="flex items-center gap-1 text-[10px] sm:text-xs text-muted-foreground">
+                      <MapPin className="w-3 h-3 flex-shrink-0" />
+                      <span className="truncate">{selectedEvent.location}</span>
                     </span>
                   )}
                 </div>
               ) : (
-                <p className="text-muted-foreground">Geen event geselecteerd</p>
+                <p className="text-sm text-muted-foreground">Geen event geselecteerd</p>
               )}
               {selectedEvent && (
-                <p className="text-xs text-muted-foreground">
+                <p className="text-[10px] sm:text-xs text-muted-foreground">
                   {formatDateRange(selectedEvent.start_date, selectedEvent.end_date)}
                 </p>
               )}
@@ -108,7 +108,7 @@ export function HomeEventSelector({ selectedEventId, onEventChange }: HomeEventS
             }}
             disabled={loading}
           >
-            <SelectTrigger className="w-[200px]">
+            <SelectTrigger className="w-full sm:w-[200px]">
               <SelectValue placeholder="Selecteer event" />
             </SelectTrigger>
             <SelectContent>

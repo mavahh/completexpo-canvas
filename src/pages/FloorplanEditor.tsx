@@ -1,10 +1,11 @@
 import { useEffect, useRef, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Loader2 } from 'lucide-react';
+import { Loader2, PanelLeft, PanelRight } from 'lucide-react';
 import { useEventRole } from '@/hooks/useEventRole';
 import { useDarkMode } from '@/hooks/useDarkMode';
 import { useFullscreen } from '@/hooks/useFullscreen';
 import { useFloorplanData, useCanvasInteraction, useFloorplanExport } from '@/hooks/floorplan';
+import { useIsMobile } from '@/hooks/use-mobile';
 import { FloorplanEditorToolbar } from '@/components/floorplan/FloorplanEditorToolbar';
 import { FloorplanLeftSidebar } from '@/components/floorplan/FloorplanLeftSidebar';
 import { FloorplanRightSidebar } from '@/components/floorplan/FloorplanRightSidebar';
@@ -12,6 +13,8 @@ import { FloorplanCanvasEnhanced } from '@/components/floorplan/FloorplanCanvasE
 import { LabelingModalEnhanced } from '@/components/floorplan/LabelingModalEnhanced';
 import { ExportDialogEnhanced } from '@/components/floorplan/ExportDialogEnhanced';
 import { SaveAsTemplateDialog } from '@/components/floorplan/SaveAsTemplateDialog';
+import { Button } from '@/components/ui/button';
+import { Sheet, SheetContent, SheetTrigger, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 
 export default function FloorplanEditor() {
   const { id: eventId } = useParams();
@@ -30,6 +33,9 @@ export default function FloorplanEditor() {
   const [showExportDialog, setShowExportDialog] = useState(false);
   const [showTemplateDialog, setShowTemplateDialog] = useState(false);
   const [rightPanelTab, setRightPanelTab] = useState('properties');
+  const [mobileLeftOpen, setMobileLeftOpen] = useState(false);
+  const [mobileRightOpen, setMobileRightOpen] = useState(false);
+  const isMobile = useIsMobile();
 
   // Floorplan data hook
   const floorplanData = useFloorplanData({ eventId, canEdit });
@@ -113,24 +119,100 @@ export default function FloorplanEditor() {
         onOpenWarnings={() => setRightPanelTab('warnings')}
       />
 
-      <div className="flex flex-1 overflow-hidden">
+      <div className="flex flex-1 overflow-hidden relative">
+        {/* Mobile panel toggle buttons */}
+        {!isFullscreen && (
+          <div className="absolute bottom-4 left-4 z-20 flex gap-2 lg:hidden">
+            <Sheet open={mobileLeftOpen} onOpenChange={setMobileLeftOpen}>
+              <SheetTrigger asChild>
+                <Button variant="secondary" size="sm" className="shadow-lg md:hidden">
+                  <PanelLeft className="w-4 h-4 mr-1" />
+                  Filters
+                </Button>
+              </SheetTrigger>
+              <SheetContent side="left" className="w-72 p-0">
+                <SheetHeader className="p-4 border-b">
+                  <SheetTitle>Filters & Exposanten</SheetTitle>
+                </SheetHeader>
+                <div className="p-4 overflow-y-auto h-[calc(100vh-80px)]">
+                  <FloorplanLeftSidebar
+                    statusFilters={floorplanData.statusFilters}
+                    statusCounts={floorplanData.statusCounts}
+                    exhibitors={floorplanData.filteredExhibitors}
+                    stands={floorplanData.stands}
+                    exhibitorSearch={floorplanData.exhibitorSearch}
+                    activeExhibitorId={floorplanData.activeExhibitorId}
+                    canEdit={canEdit}
+                    onFilterChange={(status, checked) => 
+                      floorplanData.setStatusFilters(prev => ({ ...prev, [status]: checked }))
+                    }
+                    onExhibitorSearchChange={floorplanData.setExhibitorSearch}
+                    onExhibitorSelect={(id) => {
+                      floorplanData.setActiveExhibitorId(id);
+                      setMobileLeftOpen(false);
+                    }}
+                  />
+                </div>
+              </SheetContent>
+            </Sheet>
+            
+            <Sheet open={mobileRightOpen} onOpenChange={setMobileRightOpen}>
+              <SheetTrigger asChild>
+                <Button variant="secondary" size="sm" className="shadow-lg md:hidden">
+                  <PanelRight className="w-4 h-4 mr-1" />
+                  {floorplanData.selectedStandIds.size > 0 ? `Selectie (${floorplanData.selectedStandIds.size})` : 'Details'}
+                </Button>
+              </SheetTrigger>
+              <SheetContent side="right" className="w-80 p-0">
+                <FloorplanRightSidebar
+                  activeTab={rightPanelTab}
+                  onTabChange={setRightPanelTab}
+                  selectedStandIds={floorplanData.selectedStandIds}
+                  selectedStand={floorplanData.selectedStand}
+                  stands={floorplanData.stands}
+                  exhibitors={floorplanData.exhibitors}
+                  exhibitorServices={floorplanData.exhibitorServices}
+                  activeExhibitorId={floorplanData.activeExhibitorId}
+                  warnings={floorplanData.warnings}
+                  eventId={eventId || ''}
+                  selectedFloorplanId={floorplanData.selectedFloorplanId}
+                  canEdit={canEdit}
+                  onUpdateStand={floorplanData.updateStand}
+                  onUpdateStandWithAutoStatus={floorplanData.updateStandWithAutoStatus}
+                  onDeleteStand={floorplanData.deleteStand}
+                  onSelectStand={(id) => floorplanData.setSelectedStandIds(new Set([id]))}
+                  onClearSelection={() => floorplanData.setSelectedStandIds(new Set())}
+                  onBulkSetStatus={floorplanData.handleBulkSetStatus}
+                  onBulkSnapToGrid={floorplanData.handleBulkSnapToGrid}
+                  onBulkClearExhibitor={floorplanData.handleBulkClearExhibitor}
+                  onBulkRotate={floorplanData.handleBulkRotate}
+                  onExportLabels={floorplanData.handleExportLabels}
+                  onFixDuplicates={canEdit ? floorplanData.handleFixDuplicates : undefined}
+                  onClampToBounds={canEdit ? floorplanData.handleClampToBounds : undefined}
+                  getExhibitorName={floorplanData.getExhibitorName}
+                />
+              </SheetContent>
+            </Sheet>
+          </div>
+        )}
+        
         {/* Left sidebar - hidden on mobile and tablet, shown on desktop */}
         {!isFullscreen && (
           <div className="hidden lg:block">
-          <FloorplanLeftSidebar
-            statusFilters={floorplanData.statusFilters}
-            statusCounts={floorplanData.statusCounts}
-            exhibitors={floorplanData.filteredExhibitors}
-            stands={floorplanData.stands}
-            exhibitorSearch={floorplanData.exhibitorSearch}
-            activeExhibitorId={floorplanData.activeExhibitorId}
-            canEdit={canEdit}
-            onFilterChange={(status, checked) => 
-              floorplanData.setStatusFilters(prev => ({ ...prev, [status]: checked }))
-            }
-            onExhibitorSearchChange={floorplanData.setExhibitorSearch}
-            onExhibitorSelect={floorplanData.setActiveExhibitorId}
-          />
+            <FloorplanLeftSidebar
+              statusFilters={floorplanData.statusFilters}
+              statusCounts={floorplanData.statusCounts}
+              exhibitors={floorplanData.filteredExhibitors}
+              stands={floorplanData.stands}
+              exhibitorSearch={floorplanData.exhibitorSearch}
+              activeExhibitorId={floorplanData.activeExhibitorId}
+              canEdit={canEdit}
+              onFilterChange={(status, checked) => 
+                floorplanData.setStatusFilters(prev => ({ ...prev, [status]: checked }))
+              }
+              onExhibitorSearchChange={floorplanData.setExhibitorSearch}
+              onExhibitorSelect={floorplanData.setActiveExhibitorId}
+            />
           </div>
         )}
 
@@ -158,33 +240,33 @@ export default function FloorplanEditor() {
         {/* Right sidebar - hidden on mobile, shown on tablet+ */}
         {!isFullscreen && (
           <div className="hidden md:block">
-          <FloorplanRightSidebar
-            activeTab={rightPanelTab}
-            onTabChange={setRightPanelTab}
-            selectedStandIds={floorplanData.selectedStandIds}
-            selectedStand={floorplanData.selectedStand}
-            stands={floorplanData.stands}
-            exhibitors={floorplanData.exhibitors}
-            exhibitorServices={floorplanData.exhibitorServices}
-            activeExhibitorId={floorplanData.activeExhibitorId}
-            warnings={floorplanData.warnings}
-            eventId={eventId || ''}
-            selectedFloorplanId={floorplanData.selectedFloorplanId}
-            canEdit={canEdit}
-            onUpdateStand={floorplanData.updateStand}
-            onUpdateStandWithAutoStatus={floorplanData.updateStandWithAutoStatus}
-            onDeleteStand={floorplanData.deleteStand}
-            onSelectStand={(id) => floorplanData.setSelectedStandIds(new Set([id]))}
-            onClearSelection={() => floorplanData.setSelectedStandIds(new Set())}
-            onBulkSetStatus={floorplanData.handleBulkSetStatus}
-            onBulkSnapToGrid={floorplanData.handleBulkSnapToGrid}
-            onBulkClearExhibitor={floorplanData.handleBulkClearExhibitor}
-            onBulkRotate={floorplanData.handleBulkRotate}
-            onExportLabels={floorplanData.handleExportLabels}
-            onFixDuplicates={canEdit ? floorplanData.handleFixDuplicates : undefined}
-            onClampToBounds={canEdit ? floorplanData.handleClampToBounds : undefined}
-            getExhibitorName={floorplanData.getExhibitorName}
-          />
+            <FloorplanRightSidebar
+              activeTab={rightPanelTab}
+              onTabChange={setRightPanelTab}
+              selectedStandIds={floorplanData.selectedStandIds}
+              selectedStand={floorplanData.selectedStand}
+              stands={floorplanData.stands}
+              exhibitors={floorplanData.exhibitors}
+              exhibitorServices={floorplanData.exhibitorServices}
+              activeExhibitorId={floorplanData.activeExhibitorId}
+              warnings={floorplanData.warnings}
+              eventId={eventId || ''}
+              selectedFloorplanId={floorplanData.selectedFloorplanId}
+              canEdit={canEdit}
+              onUpdateStand={floorplanData.updateStand}
+              onUpdateStandWithAutoStatus={floorplanData.updateStandWithAutoStatus}
+              onDeleteStand={floorplanData.deleteStand}
+              onSelectStand={(id) => floorplanData.setSelectedStandIds(new Set([id]))}
+              onClearSelection={() => floorplanData.setSelectedStandIds(new Set())}
+              onBulkSetStatus={floorplanData.handleBulkSetStatus}
+              onBulkSnapToGrid={floorplanData.handleBulkSnapToGrid}
+              onBulkClearExhibitor={floorplanData.handleBulkClearExhibitor}
+              onBulkRotate={floorplanData.handleBulkRotate}
+              onExportLabels={floorplanData.handleExportLabels}
+              onFixDuplicates={canEdit ? floorplanData.handleFixDuplicates : undefined}
+              onClampToBounds={canEdit ? floorplanData.handleClampToBounds : undefined}
+              getExhibitorName={floorplanData.getExhibitorName}
+            />
           </div>
         )}
       </div>
