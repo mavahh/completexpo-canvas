@@ -33,7 +33,7 @@ export function FloorplanLeftSidebar({
   );
 
   return (
-    <div className="w-56 xl:w-64 bg-card border-r border-border p-3 xl:p-4 overflow-y-auto space-y-4">
+    <div className="w-full lg:w-56 xl:w-64 bg-card lg:border-r border-border p-3 xl:p-4 overflow-y-auto space-y-4 h-full">
       <StandLegend 
         filters={statusFilters} 
         onFilterChange={onFilterChange}
@@ -41,17 +41,17 @@ export function FloorplanLeftSidebar({
       />
       
       <div>
-        <h3 className="font-medium text-foreground mb-3">Exposanten</h3>
-        <div className="relative mb-3">
+        <h3 className="font-medium text-sm sm:text-base text-foreground mb-2 sm:mb-3">Exposanten</h3>
+        <div className="relative mb-2 sm:mb-3">
           <Search className="absolute left-2 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
           <Input
             placeholder="Zoeken..."
             value={exhibitorSearch}
             onChange={(e) => onExhibitorSearchChange(e.target.value)}
-            className="pl-8 h-9"
+            className="pl-8 h-9 text-sm"
           />
         </div>
-        <div className="space-y-1 max-h-64 overflow-y-auto">
+        <div className="space-y-1 max-h-48 sm:max-h-64 overflow-y-auto">
           {filteredExhibitors.map((ex) => {
             const hasStand = stands.some((s) => s.exhibitor_id === ex.id);
             return (
@@ -59,7 +59,7 @@ export function FloorplanLeftSidebar({
                 key={ex.id}
                 onClick={() => canEdit && onExhibitorSelect(activeExhibitorId === ex.id ? null : ex.id)}
                 disabled={!canEdit}
-                className={`w-full text-left px-3 py-2 rounded-md text-sm transition-colors ${
+                className={`w-full text-left px-2 sm:px-3 py-1.5 sm:py-2 rounded-md text-xs sm:text-sm transition-colors ${
                   activeExhibitorId === ex.id
                     ? 'bg-primary text-primary-foreground'
                     : hasStand
@@ -69,7 +69,7 @@ export function FloorplanLeftSidebar({
                     : 'text-muted-foreground cursor-default'
                 }`}
               >
-                <div className="flex items-center justify-between">
+                <div className="flex items-center justify-between gap-2">
                   <span className="truncate">{ex.name}</span>
                   {hasStand && <Check className="w-3 h-3 flex-shrink-0" />}
                 </div>
@@ -77,7 +77,7 @@ export function FloorplanLeftSidebar({
             );
           })}
           {filteredExhibitors.length === 0 && (
-            <p className="text-sm text-muted-foreground text-center py-4">
+            <p className="text-xs sm:text-sm text-muted-foreground text-center py-4">
               Geen exposanten gevonden
             </p>
           )}

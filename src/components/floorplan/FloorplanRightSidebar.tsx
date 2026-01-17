@@ -62,9 +62,9 @@ export function FloorplanRightSidebar({
   getExhibitorName,
 }: FloorplanRightSidebarProps) {
   return (
-    <div className="w-64 xl:w-72 bg-card border-l border-border overflow-y-auto">
+    <div className="w-full md:w-64 xl:w-72 bg-card md:border-l border-border overflow-y-auto h-full">
       <Tabs value={activeTab} onValueChange={onTabChange} className="h-full flex flex-col">
-        <TabsList className="w-full rounded-none border-b border-border h-auto p-0">
+        <TabsList className="w-full rounded-none border-b border-border h-auto p-0 flex-shrink-0">
           <TabsTrigger value="properties" className="flex-1 py-2 text-xs sm:text-sm">Props</TabsTrigger>
           <TabsTrigger value="warnings" className="flex-1 relative py-2 text-xs sm:text-sm">
             Warn
@@ -77,7 +77,7 @@ export function FloorplanRightSidebar({
           <TabsTrigger value="log" className="flex-1 py-2 text-xs sm:text-sm">Log</TabsTrigger>
         </TabsList>
         
-        <TabsContent value="properties" className="flex-1 p-4 m-0 overflow-y-auto">
+        <TabsContent value="properties" className="flex-1 p-3 sm:p-4 m-0 overflow-y-auto">
           {selectedStandIds.size > 1 ? (
             <BulkActionsPanel
               selectedCount={selectedStandIds.size}
@@ -102,11 +102,11 @@ export function FloorplanRightSidebar({
               getExhibitorName={getExhibitorName}
             />
           ) : (
-            <p className="text-sm text-muted-foreground">
+            <p className="text-xs sm:text-sm text-muted-foreground">
               Selecteer een stand om de eigenschappen te {canEdit ? 'bewerken' : 'bekijken'}.
               <br /><br />
-              <span className="text-xs">Tips:</span>
-              <ul className="text-xs mt-1 space-y-1 text-muted-foreground">
+              <span className="text-[10px] sm:text-xs">Tips:</span>
+              <ul className="text-[10px] sm:text-xs mt-1 space-y-1 text-muted-foreground">
                 <li>• Shift+klik voor multi-select</li>
                 <li>• Spatie+slepen om te pannen</li>
                 <li>• Scroll om te zoomen</li>
@@ -116,7 +116,7 @@ export function FloorplanRightSidebar({
           )}
         </TabsContent>
         
-        <TabsContent value="warnings" className="flex-1 p-4 m-0 overflow-y-auto">
+        <TabsContent value="warnings" className="flex-1 p-3 sm:p-4 m-0 overflow-y-auto">
           <WarningsPanelEnhanced
             warnings={warnings}
             onSelectStand={onSelectStand}
@@ -125,7 +125,7 @@ export function FloorplanRightSidebar({
           />
         </TabsContent>
         
-        <TabsContent value="log" className="flex-1 p-4 m-0 overflow-y-auto">
+        <TabsContent value="log" className="flex-1 p-3 sm:p-4 m-0 overflow-y-auto">
           {eventId && (
             <AuditLogPanelEnhanced
               eventId={eventId}

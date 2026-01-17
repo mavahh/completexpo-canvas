@@ -57,13 +57,13 @@ export default function PosLayout() {
   const visibleItems = posNavItems.filter(item => permissionMap[item.permission]);
 
   return (
-    <div className="h-full flex">
-      {/* POS Sidebar */}
-      <div className="w-48 border-r bg-muted/30 flex flex-col">
-        <div className="p-4 border-b">
+    <div className="h-full flex flex-col md:flex-row">
+      {/* POS Sidebar - horizontal on mobile, vertical on tablet+ */}
+      <div className="w-full md:w-48 border-b md:border-b-0 md:border-r bg-muted/30 flex flex-col">
+        <div className="p-3 md:p-4 border-b hidden md:block">
           <h2 className="font-semibold text-lg">POS</h2>
         </div>
-        <nav className="flex-1 p-2 space-y-1">
+        <nav className="flex md:flex-col flex-1 p-2 gap-1 overflow-x-auto md:overflow-x-visible">
           {visibleItems.map(item => (
             <NavLink
               key={item.path}
@@ -71,15 +71,15 @@ export default function PosLayout() {
               end={item.path === ''}
               className={({ isActive }) =>
                 cn(
-                  'flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium transition-colors',
+                  'flex items-center gap-2 md:gap-3 px-3 py-2 rounded-md text-sm font-medium transition-colors whitespace-nowrap',
                   isActive
                     ? 'bg-primary text-primary-foreground'
                     : 'text-muted-foreground hover:text-foreground hover:bg-muted'
                 )
               }
             >
-              <item.icon className="h-4 w-4" />
-              {item.label}
+              <item.icon className="h-4 w-4 flex-shrink-0" />
+              <span className="hidden sm:inline md:inline">{item.label}</span>
             </NavLink>
           ))}
         </nav>
