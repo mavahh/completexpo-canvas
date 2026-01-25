@@ -115,11 +115,13 @@ export function DrawModeToolbar({
         </Tooltip>
       </div>
 
-      {/* Stand Presets */}
-      <StandPresetSelector
-        onSelectPreset={onAddWithPreset}
-        onAddDefault={onAddDefault}
-      />
+      {/* Stand Presets - hidden on smaller screens since main toolbar has add button */}
+      <div className="hidden xl:block">
+        <StandPresetSelector
+          onSelectPreset={onAddWithPreset}
+          onAddDefault={onAddDefault}
+        />
+      </div>
 
       {/* Performance Mode */}
       <PerformanceModeToggle
