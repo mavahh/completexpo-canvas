@@ -81,7 +81,7 @@ export function FloorplanEditorToolbar({
   onOpenWarnings,
 }: FloorplanEditorToolbarProps) {
   return (
-    <div className={`flex items-center justify-between bg-card border-b border-border p-2 gap-2 ${isFullscreen ? 'px-4' : 'rounded-t-lg sm:p-3'}`}>
+    <div className={`flex items-center justify-between p-2 gap-2 flex-1 min-w-0 ${isFullscreen ? 'px-4' : 'sm:p-3'}`}>
       {/* Left section */}
       <div className="flex items-center gap-1 min-w-0 flex-1">
         <Button variant="ghost" size="icon" className="h-8 w-8 sm:h-9 sm:w-auto sm:px-3" onClick={onNavigateBack}>

@@ -114,7 +114,8 @@ export default function FloorplanEditor() {
           <EditSessionBanner editorNames={editor.otherEditorNames} />
         )}
 
-        <div className="flex items-center bg-card border-b border-border">
+        {/* Unified toolbar */}
+        <div className="flex items-center bg-card border-b border-border flex-wrap">
           <FloorplanEditorToolbar
             eventId={eventId || ''}
             floorplans={editor.floorplans}
@@ -148,8 +149,8 @@ export default function FloorplanEditor() {
             onOpenWarnings={() => setRightPanelTab('warnings')}
           />
 
-          {/* Draw mode toolbar - only on larger screens */}
-          <div className="hidden lg:flex">
+          {/* Draw mode toolbar - integrated in same row on xl+, hidden on smaller */}
+          <div className="hidden xl:flex flex-shrink-0">
             <DrawModeToolbar
               activeTool={editor.activeTool}
               onToolChange={editor.setActiveTool}
