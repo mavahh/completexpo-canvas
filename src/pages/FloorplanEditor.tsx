@@ -4,17 +4,20 @@ import { Loader2, PanelLeft, PanelRight } from 'lucide-react';
 import { useEventRole } from '@/hooks/useEventRole';
 import { useDarkMode } from '@/hooks/useDarkMode';
 import { useFullscreen } from '@/hooks/useFullscreen';
-import { useFloorplanData, useCanvasInteraction, useFloorplanExport } from '@/hooks/floorplan';
+import { useFloorplanEditor, useFloorplanExport } from '@/hooks/floorplan';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { FloorplanEditorToolbar } from '@/components/floorplan/FloorplanEditorToolbar';
+import { DrawModeToolbar } from '@/components/floorplan/DrawModeToolbar';
 import { FloorplanLeftSidebar } from '@/components/floorplan/FloorplanLeftSidebar';
 import { FloorplanRightSidebar } from '@/components/floorplan/FloorplanRightSidebar';
 import { FloorplanCanvasEnhanced } from '@/components/floorplan/FloorplanCanvasEnhanced';
 import { LabelingModalEnhanced } from '@/components/floorplan/LabelingModalEnhanced';
 import { ExportDialogEnhanced } from '@/components/floorplan/ExportDialogEnhanced';
 import { SaveAsTemplateDialog } from '@/components/floorplan/SaveAsTemplateDialog';
+import { EditSessionBanner } from '@/components/floorplan/EditSessionBanner';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger, SheetHeader, SheetTitle } from '@/components/ui/sheet';
+import { TooltipProvider } from '@/components/ui/tooltip';
 
 export default function FloorplanEditor() {
   const { id: eventId } = useParams();
@@ -37,43 +40,62 @@ export default function FloorplanEditor() {
   const [mobileRightOpen, setMobileRightOpen] = useState(false);
   const isMobile = useIsMobile();
 
-  // Floorplan data hook
-  const floorplanData = useFloorplanData({ eventId, canEdit });
-  
-  // Canvas interaction hook
-  const canvasInteraction = useCanvasInteraction({
-    floorplan: floorplanData.floorplan,
-    stands: floorplanData.stands,
-    selectedStandIds: floorplanData.selectedStandIds,
-    canEdit,
-    canvasRef,
-    canvasContainerRef,
-    setSelectedStandIds: floorplanData.setSelectedStandIds,
-    updateStand: floorplanData.updateStand,
-    deleteStand: floorplanData.deleteStand,
+  // Integrated floorplan editor hook with all features
+  const editor = useFloorplanEditor({ 
+    eventId, 
+    canEdit, 
+    canvasRef, 
+    canvasContainerRef 
   });
 
   // Export hook
   const { handleExport } = useFloorplanExport({
     canvasRef,
-    floorplan: floorplanData.floorplan,
-    eventName: floorplanData.eventName,
-    statusCounts: floorplanData.statusCounts,
-    showGrid: canvasInteraction.showGrid,
-    setShowGrid: canvasInteraction.setShowGrid,
+    floorplan: editor.floorplan,
+    eventName: editor.eventName,
+    statusCounts: editor.statusCounts,
+    showGrid: editor.canvasInteraction.showGrid,
+    setShowGrid: editor.canvasInteraction.setShowGrid,
   });
 
   // Initial data fetch
   useEffect(() => {
-    floorplanData.fetchData();
+    editor.fetchData();
   }, [eventId]);
 
   // Fetch stands when floorplan changes
   useEffect(() => {
-    floorplanData.fetchStands();
-  }, [floorplanData.selectedFloorplanId]);
+    editor.fetchStands();
+  }, [editor.selectedFloorplanId]);
 
-  if (floorplanData.loading || roleLoading) {
+  // Handle canvas mouse events for draw mode
+  const handleCanvasMouseDown = (e: React.MouseEvent, standId?: string) => {
+    if (editor.activeTool === 'draw' && !standId && canvasRef.current) {
+      const rect = canvasRef.current.getBoundingClientRect();
+      if (editor.startDraw(e, rect)) {
+        return;
+      }
+    }
+    editor.canvasInteraction.handleMouseDown(e, standId);
+  };
+
+  const handleCanvasMouseMove = (e: React.MouseEvent) => {
+    if (editor.isDrawing) {
+      editor.updateDraw(e);
+    } else {
+      editor.canvasInteraction.handleMouseMove(e);
+    }
+  };
+
+  const handleCanvasMouseUp = () => {
+    if (editor.isDrawing) {
+      editor.endDraw();
+    } else {
+      editor.canvasInteraction.handleMouseUp();
+    }
+  };
+
+  if (editor.loading || roleLoading) {
     return (
       <div className="flex items-center justify-center h-[80vh]">
         <Loader2 className="w-8 h-8 animate-spin text-primary" />
@@ -82,219 +104,250 @@ export default function FloorplanEditor() {
   }
 
   return (
-    <div 
-      ref={editorRef}
-      className={`flex flex-col animate-fade-in ${isFullscreen ? 'fixed inset-0 z-50 bg-background' : 'h-[calc(100vh-80px)] sm:h-[calc(100vh-120px)]'}`}
-    >
-      <FloorplanEditorToolbar
-        eventId={eventId || ''}
-        floorplans={floorplanData.floorplans}
-        floorplan={floorplanData.floorplan}
-        selectedFloorplanId={floorplanData.selectedFloorplanId}
-        zoom={canvasInteraction.zoom}
-        showGrid={canvasInteraction.showGrid}
-        isDark={isDark}
-        isFullscreen={isFullscreen}
-        isReadOnly={isReadOnly}
-        canEdit={canEdit}
-        saving={floorplanData.saving}
-        dirty={floorplanData.dirty}
-        warningsCount={floorplanData.warnings.length}
-        onNavigateBack={() => navigate(`/events/${eventId}`)}
-        onSelectFloorplan={floorplanData.setSelectedFloorplanId}
-        onFloorplanAdded={floorplanData.handleFloorplanAdded}
-        onZoomIn={() => canvasInteraction.setZoom(Math.min(3, canvasInteraction.zoom + 0.1))}
-        onZoomOut={() => canvasInteraction.setZoom(Math.max(0.1, canvasInteraction.zoom - 0.1))}
-        onZoomReset={() => { canvasInteraction.setZoom(1); canvasInteraction.setPan({ x: 0, y: 0 }); }}
-        onFitToScreen={canvasInteraction.fitToScreen}
-        onToggleGrid={() => canvasInteraction.setShowGrid(!canvasInteraction.showGrid)}
-        onToggleDarkMode={toggleDarkMode}
-        onToggleFullscreen={toggleFullscreen}
-        onBackgroundChange={floorplanData.handleBackgroundChange}
-        onOpenLabeling={() => setShowLabelingModal(true)}
-        onOpenExport={() => setShowExportDialog(true)}
-        onOpenTemplate={() => setShowTemplateDialog(true)}
-        onAddStand={floorplanData.addStand}
-        onSaveAll={floorplanData.saveAll}
-        onOpenWarnings={() => setRightPanelTab('warnings')}
-      />
-
-      <div className="flex flex-1 overflow-hidden relative">
-        {/* Mobile panel toggle buttons */}
-        {!isFullscreen && (
-          <div className="absolute bottom-4 left-4 z-20 flex gap-2 lg:hidden">
-            <Sheet open={mobileLeftOpen} onOpenChange={setMobileLeftOpen}>
-              <SheetTrigger asChild>
-                <Button variant="secondary" size="sm" className="shadow-lg md:hidden">
-                  <PanelLeft className="w-4 h-4 mr-1" />
-                  Filters
-                </Button>
-              </SheetTrigger>
-              <SheetContent side="left" className="w-72 p-0">
-                <SheetHeader className="p-4 border-b">
-                  <SheetTitle>Filters & Exposanten</SheetTitle>
-                </SheetHeader>
-                <div className="p-4 overflow-y-auto h-[calc(100vh-80px)]">
-                  <FloorplanLeftSidebar
-                    statusFilters={floorplanData.statusFilters}
-                    statusCounts={floorplanData.statusCounts}
-                    exhibitors={floorplanData.filteredExhibitors}
-                    stands={floorplanData.stands}
-                    exhibitorSearch={floorplanData.exhibitorSearch}
-                    activeExhibitorId={floorplanData.activeExhibitorId}
-                    canEdit={canEdit}
-                    onFilterChange={(status, checked) => 
-                      floorplanData.setStatusFilters(prev => ({ ...prev, [status]: checked }))
-                    }
-                    onExhibitorSearchChange={floorplanData.setExhibitorSearch}
-                    onExhibitorSelect={(id) => {
-                      floorplanData.setActiveExhibitorId(id);
-                      setMobileLeftOpen(false);
-                    }}
-                  />
-                </div>
-              </SheetContent>
-            </Sheet>
-            
-            <Sheet open={mobileRightOpen} onOpenChange={setMobileRightOpen}>
-              <SheetTrigger asChild>
-                <Button variant="secondary" size="sm" className="shadow-lg md:hidden">
-                  <PanelRight className="w-4 h-4 mr-1" />
-                  {floorplanData.selectedStandIds.size > 0 ? `Selectie (${floorplanData.selectedStandIds.size})` : 'Details'}
-                </Button>
-              </SheetTrigger>
-              <SheetContent side="right" className="w-80 p-0">
-                <FloorplanRightSidebar
-                  activeTab={rightPanelTab}
-                  onTabChange={setRightPanelTab}
-                  selectedStandIds={floorplanData.selectedStandIds}
-                  selectedStand={floorplanData.selectedStand}
-                  stands={floorplanData.stands}
-                  exhibitors={floorplanData.exhibitors}
-                  exhibitorServices={floorplanData.exhibitorServices}
-                  activeExhibitorId={floorplanData.activeExhibitorId}
-                  warnings={floorplanData.warnings}
-                  eventId={eventId || ''}
-                  selectedFloorplanId={floorplanData.selectedFloorplanId}
-                  canEdit={canEdit}
-                  onUpdateStand={floorplanData.updateStand}
-                  onUpdateStandWithAutoStatus={floorplanData.updateStandWithAutoStatus}
-                  onDeleteStand={floorplanData.deleteStand}
-                  onSelectStand={(id) => floorplanData.setSelectedStandIds(new Set([id]))}
-                  onClearSelection={() => floorplanData.setSelectedStandIds(new Set())}
-                  onBulkSetStatus={floorplanData.handleBulkSetStatus}
-                  onBulkSnapToGrid={floorplanData.handleBulkSnapToGrid}
-                  onBulkClearExhibitor={floorplanData.handleBulkClearExhibitor}
-                  onBulkRotate={floorplanData.handleBulkRotate}
-                  onExportLabels={floorplanData.handleExportLabels}
-                  onFixDuplicates={canEdit ? floorplanData.handleFixDuplicates : undefined}
-                  onClampToBounds={canEdit ? floorplanData.handleClampToBounds : undefined}
-                  getExhibitorName={floorplanData.getExhibitorName}
-                />
-              </SheetContent>
-            </Sheet>
-          </div>
+    <TooltipProvider>
+      <div 
+        ref={editorRef}
+        className={`flex flex-col animate-fade-in ${isFullscreen ? 'fixed inset-0 z-50 bg-background' : 'h-[calc(100vh-80px)] sm:h-[calc(100vh-120px)]'}`}
+      >
+        {/* Edit session warning banner */}
+        {editor.hasOtherEditors && (
+          <EditSessionBanner editorNames={editor.otherEditorNames} />
         )}
-        
-        {/* Left sidebar - hidden on mobile and tablet, shown on desktop */}
-        {!isFullscreen && (
-          <div className="hidden lg:block">
-            <FloorplanLeftSidebar
-              statusFilters={floorplanData.statusFilters}
-              statusCounts={floorplanData.statusCounts}
-              exhibitors={floorplanData.filteredExhibitors}
-              stands={floorplanData.stands}
-              exhibitorSearch={floorplanData.exhibitorSearch}
-              activeExhibitorId={floorplanData.activeExhibitorId}
+
+        <div className="flex items-center bg-card border-b border-border">
+          <FloorplanEditorToolbar
+            eventId={eventId || ''}
+            floorplans={editor.floorplans}
+            floorplan={editor.floorplan}
+            selectedFloorplanId={editor.selectedFloorplanId}
+            zoom={editor.canvasInteraction.zoom}
+            showGrid={editor.canvasInteraction.showGrid}
+            isDark={isDark}
+            isFullscreen={isFullscreen}
+            isReadOnly={isReadOnly}
+            canEdit={canEdit}
+            saving={editor.saving}
+            dirty={editor.dirty}
+            warningsCount={editor.warnings.length}
+            onNavigateBack={() => navigate(`/events/${eventId}`)}
+            onSelectFloorplan={editor.setSelectedFloorplanId}
+            onFloorplanAdded={editor.handleFloorplanAdded}
+            onZoomIn={() => editor.canvasInteraction.setZoom(Math.min(3, editor.canvasInteraction.zoom + 0.1))}
+            onZoomOut={() => editor.canvasInteraction.setZoom(Math.max(0.1, editor.canvasInteraction.zoom - 0.1))}
+            onZoomReset={() => { editor.canvasInteraction.setZoom(1); editor.canvasInteraction.setPan({ x: 0, y: 0 }); }}
+            onFitToScreen={editor.canvasInteraction.fitToScreen}
+            onToggleGrid={() => editor.canvasInteraction.setShowGrid(!editor.canvasInteraction.showGrid)}
+            onToggleDarkMode={toggleDarkMode}
+            onToggleFullscreen={toggleFullscreen}
+            onBackgroundChange={editor.handleBackgroundChange}
+            onOpenLabeling={() => setShowLabelingModal(true)}
+            onOpenExport={() => setShowExportDialog(true)}
+            onOpenTemplate={() => setShowTemplateDialog(true)}
+            onAddStand={editor.addStand}
+            onSaveAll={editor.saveNow}
+            onOpenWarnings={() => setRightPanelTab('warnings')}
+          />
+
+          {/* Draw mode toolbar - only on larger screens */}
+          <div className="hidden lg:flex">
+            <DrawModeToolbar
+              activeTool={editor.activeTool}
+              onToolChange={editor.setActiveTool}
+              canUndo={editor.canUndo}
+              canRedo={editor.canRedo}
+              onUndo={editor.undo}
+              onRedo={editor.redo}
+              saveStatus={editor.saveStatus}
+              lastSavedAt={editor.lastSavedAt}
+              performanceMode={editor.performanceMode}
+              onPerformanceModeChange={editor.setPerformanceMode}
+              onAddDefault={editor.addStand}
+              onAddWithPreset={editor.addWithPreset}
               canEdit={canEdit}
-              onFilterChange={(status, checked) => 
-                floorplanData.setStatusFilters(prev => ({ ...prev, [status]: checked }))
-              }
-              onExhibitorSearchChange={floorplanData.setExhibitorSearch}
-              onExhibitorSelect={floorplanData.setActiveExhibitorId}
             />
           </div>
-        )}
+        </div>
 
-        {/* Canvas */}
-        <FloorplanCanvasEnhanced
-          ref={canvasRef}
-          floorplan={floorplanData.floorplan}
-          stands={floorplanData.filteredStands}
-          selectedStandIds={floorplanData.selectedStandIds}
-          exhibitorServices={floorplanData.exhibitorServices}
-          zoom={canvasInteraction.zoom}
-          pan={canvasInteraction.pan}
-          showGrid={canvasInteraction.showGrid}
-          isPanning={canvasInteraction.isPanning}
-          spacePressed={canvasInteraction.spacePressed}
-          canEdit={canEdit}
-          statusFilters={floorplanData.statusFilters}
-          getExhibitorName={floorplanData.getExhibitorName}
-          onMouseDown={canvasInteraction.handleMouseDown}
-          onMouseMove={canvasInteraction.handleMouseMove}
-          onMouseUp={canvasInteraction.handleMouseUp}
-          onResizeStart={canvasInteraction.handleResizeStart}
+        <div className="flex flex-1 overflow-hidden relative" ref={canvasContainerRef}>
+          {/* Mobile panel toggle buttons */}
+          {!isFullscreen && (
+            <div className="absolute bottom-4 left-4 z-20 flex gap-2 lg:hidden">
+              <Sheet open={mobileLeftOpen} onOpenChange={setMobileLeftOpen}>
+                <SheetTrigger asChild>
+                  <Button variant="secondary" size="sm" className="shadow-lg md:hidden">
+                    <PanelLeft className="w-4 h-4 mr-1" />
+                    Filters
+                  </Button>
+                </SheetTrigger>
+                <SheetContent side="left" className="w-72 p-0">
+                  <SheetHeader className="p-4 border-b">
+                    <SheetTitle>Filters & Exposanten</SheetTitle>
+                  </SheetHeader>
+                  <div className="p-4 overflow-y-auto h-[calc(100vh-80px)]">
+                    <FloorplanLeftSidebar
+                      statusFilters={editor.statusFilters}
+                      statusCounts={editor.statusCounts}
+                      exhibitors={editor.filteredExhibitors}
+                      stands={editor.stands}
+                      exhibitorSearch={editor.exhibitorSearch}
+                      activeExhibitorId={editor.activeExhibitorId}
+                      canEdit={canEdit}
+                      onFilterChange={(status, checked) => 
+                        editor.setStatusFilters(prev => ({ ...prev, [status]: checked }))
+                      }
+                      onExhibitorSearchChange={editor.setExhibitorSearch}
+                      onExhibitorSelect={(id) => {
+                        editor.setActiveExhibitorId(id);
+                        setMobileLeftOpen(false);
+                      }}
+                    />
+                  </div>
+                </SheetContent>
+              </Sheet>
+              
+              <Sheet open={mobileRightOpen} onOpenChange={setMobileRightOpen}>
+                <SheetTrigger asChild>
+                  <Button variant="secondary" size="sm" className="shadow-lg md:hidden">
+                    <PanelRight className="w-4 h-4 mr-1" />
+                    {editor.selectedStandIds.size > 0 ? `Selectie (${editor.selectedStandIds.size})` : 'Details'}
+                  </Button>
+                </SheetTrigger>
+                <SheetContent side="right" className="w-80 p-0">
+                  <FloorplanRightSidebar
+                    activeTab={rightPanelTab}
+                    onTabChange={setRightPanelTab}
+                    selectedStandIds={editor.selectedStandIds}
+                    selectedStand={editor.selectedStand}
+                    stands={editor.stands}
+                    exhibitors={editor.exhibitors}
+                    exhibitorServices={editor.exhibitorServices}
+                    activeExhibitorId={editor.activeExhibitorId}
+                    warnings={editor.warnings}
+                    eventId={eventId || ''}
+                    selectedFloorplanId={editor.selectedFloorplanId}
+                    canEdit={canEdit}
+                    onUpdateStand={editor.updateStandWithUndo}
+                    onUpdateStandWithAutoStatus={editor.updateStandWithAutoStatus}
+                    onDeleteStand={editor.deleteStand}
+                    onSelectStand={(id) => editor.setSelectedStandIds(new Set([id]))}
+                    onClearSelection={() => editor.setSelectedStandIds(new Set())}
+                    onBulkSetStatus={editor.handleBulkSetStatus}
+                    onBulkSnapToGrid={editor.handleBulkSnapToGrid}
+                    onBulkClearExhibitor={editor.handleBulkClearExhibitor}
+                    onBulkRotate={editor.handleBulkRotate}
+                    onExportLabels={editor.handleExportLabels}
+                    onFixDuplicates={canEdit ? editor.handleFixDuplicates : undefined}
+                    onClampToBounds={canEdit ? editor.handleClampToBounds : undefined}
+                    getExhibitorName={editor.getExhibitorName}
+                  />
+                </SheetContent>
+              </Sheet>
+            </div>
+          )}
+          
+          {/* Left sidebar - hidden on mobile and tablet, shown on desktop */}
+          {!isFullscreen && (
+            <div className="hidden lg:block">
+              <FloorplanLeftSidebar
+                statusFilters={editor.statusFilters}
+                statusCounts={editor.statusCounts}
+                exhibitors={editor.filteredExhibitors}
+                stands={editor.stands}
+                exhibitorSearch={editor.exhibitorSearch}
+                activeExhibitorId={editor.activeExhibitorId}
+                canEdit={canEdit}
+                onFilterChange={(status, checked) => 
+                  editor.setStatusFilters(prev => ({ ...prev, [status]: checked }))
+                }
+                onExhibitorSearchChange={editor.setExhibitorSearch}
+                onExhibitorSelect={editor.setActiveExhibitorId}
+              />
+            </div>
+          )}
+
+          {/* Canvas */}
+          <FloorplanCanvasEnhanced
+            ref={canvasRef}
+            floorplan={editor.floorplan}
+            stands={editor.filteredStands}
+            selectedStandIds={editor.selectedStandIds}
+            exhibitorServices={editor.exhibitorServices}
+            zoom={editor.canvasInteraction.zoom}
+            pan={editor.canvasInteraction.pan}
+            showGrid={editor.canvasInteraction.showGrid}
+            isPanning={editor.canvasInteraction.isPanning}
+            spacePressed={editor.canvasInteraction.spacePressed}
+            canEdit={canEdit}
+            statusFilters={editor.statusFilters}
+            getExhibitorName={editor.getExhibitorName}
+            onMouseDown={handleCanvasMouseDown}
+            onMouseMove={handleCanvasMouseMove}
+            onMouseUp={handleCanvasMouseUp}
+            onResizeStart={editor.canvasInteraction.handleResizeStart}
+            activeTool={editor.activeTool}
+            drawRect={editor.drawRect}
+            performanceMode={editor.performanceMode}
+          />
+
+          {/* Right sidebar - hidden on mobile, shown on tablet+ */}
+          {!isFullscreen && (
+            <div className="hidden md:block">
+              <FloorplanRightSidebar
+                activeTab={rightPanelTab}
+                onTabChange={setRightPanelTab}
+                selectedStandIds={editor.selectedStandIds}
+                selectedStand={editor.selectedStand}
+                stands={editor.stands}
+                exhibitors={editor.exhibitors}
+                exhibitorServices={editor.exhibitorServices}
+                activeExhibitorId={editor.activeExhibitorId}
+                warnings={editor.warnings}
+                eventId={eventId || ''}
+                selectedFloorplanId={editor.selectedFloorplanId}
+                canEdit={canEdit}
+                onUpdateStand={editor.updateStandWithUndo}
+                onUpdateStandWithAutoStatus={editor.updateStandWithAutoStatus}
+                onDeleteStand={editor.deleteStand}
+                onSelectStand={(id) => editor.setSelectedStandIds(new Set([id]))}
+                onClearSelection={() => editor.setSelectedStandIds(new Set())}
+                onBulkSetStatus={editor.handleBulkSetStatus}
+                onBulkSnapToGrid={editor.handleBulkSnapToGrid}
+                onBulkClearExhibitor={editor.handleBulkClearExhibitor}
+                onBulkRotate={editor.handleBulkRotate}
+                onExportLabels={editor.handleExportLabels}
+                onFixDuplicates={canEdit ? editor.handleFixDuplicates : undefined}
+                onClampToBounds={canEdit ? editor.handleClampToBounds : undefined}
+                getExhibitorName={editor.getExhibitorName}
+              />
+            </div>
+          )}
+        </div>
+
+        {/* Modals */}
+        <LabelingModalEnhanced
+          open={showLabelingModal}
+          onClose={() => setShowLabelingModal(false)}
+          onApply={editor.handleApplyLabels}
+          selectedCount={editor.selectedStandIds.size}
+          totalCount={editor.stands.length}
+          existingLabels={editor.stands.map(s => s.label)}
+        />
+        
+        <ExportDialogEnhanced
+          open={showExportDialog}
+          onClose={() => setShowExportDialog(false)}
+          onExport={handleExport}
+          eventName={editor.eventName}
+          floorplanName={editor.floorplan?.name || 'Floorplan'}
         />
 
-        {/* Right sidebar - hidden on mobile, shown on tablet+ */}
-        {!isFullscreen && (
-          <div className="hidden md:block">
-            <FloorplanRightSidebar
-              activeTab={rightPanelTab}
-              onTabChange={setRightPanelTab}
-              selectedStandIds={floorplanData.selectedStandIds}
-              selectedStand={floorplanData.selectedStand}
-              stands={floorplanData.stands}
-              exhibitors={floorplanData.exhibitors}
-              exhibitorServices={floorplanData.exhibitorServices}
-              activeExhibitorId={floorplanData.activeExhibitorId}
-              warnings={floorplanData.warnings}
-              eventId={eventId || ''}
-              selectedFloorplanId={floorplanData.selectedFloorplanId}
-              canEdit={canEdit}
-              onUpdateStand={floorplanData.updateStand}
-              onUpdateStandWithAutoStatus={floorplanData.updateStandWithAutoStatus}
-              onDeleteStand={floorplanData.deleteStand}
-              onSelectStand={(id) => floorplanData.setSelectedStandIds(new Set([id]))}
-              onClearSelection={() => floorplanData.setSelectedStandIds(new Set())}
-              onBulkSetStatus={floorplanData.handleBulkSetStatus}
-              onBulkSnapToGrid={floorplanData.handleBulkSnapToGrid}
-              onBulkClearExhibitor={floorplanData.handleBulkClearExhibitor}
-              onBulkRotate={floorplanData.handleBulkRotate}
-              onExportLabels={floorplanData.handleExportLabels}
-              onFixDuplicates={canEdit ? floorplanData.handleFixDuplicates : undefined}
-              onClampToBounds={canEdit ? floorplanData.handleClampToBounds : undefined}
-              getExhibitorName={floorplanData.getExhibitorName}
-            />
-          </div>
-        )}
+        <SaveAsTemplateDialog
+          open={showTemplateDialog}
+          onClose={() => setShowTemplateDialog(false)}
+          floorplan={editor.floorplan || null}
+          stands={editor.stands}
+        />
       </div>
-
-      {/* Modals */}
-      <LabelingModalEnhanced
-        open={showLabelingModal}
-        onClose={() => setShowLabelingModal(false)}
-        onApply={floorplanData.handleApplyLabels}
-        selectedCount={floorplanData.selectedStandIds.size}
-        totalCount={floorplanData.stands.length}
-        existingLabels={floorplanData.stands.map(s => s.label)}
-      />
-      
-      <ExportDialogEnhanced
-        open={showExportDialog}
-        onClose={() => setShowExportDialog(false)}
-        onExport={handleExport}
-        eventName={floorplanData.eventName}
-        floorplanName={floorplanData.floorplan?.name || 'Floorplan'}
-      />
-
-      <SaveAsTemplateDialog
-        open={showTemplateDialog}
-        onClose={() => setShowTemplateDialog(false)}
-        floorplan={floorplanData.floorplan || null}
-        stands={floorplanData.stands}
-      />
-    </div>
+    </TooltipProvider>
   );
 }

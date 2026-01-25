@@ -319,6 +319,60 @@ export function useFloorplanData({ eventId, canEdit }: UseFloorplanDataProps) {
     }
   }, [floorplan, eventId, canEdit, stands, activeExhibitorId, toast, auditLog]);
 
+  // Add stand with specific size (for draw mode)
+  const addStandWithSize = useCallback(async (x: number, y: number, width: number, height: number) => {
+    if (!floorplan || !eventId || !canEdit) return;
+
+    const existingLabels = stands.map((s) => s.label);
+    let newLabel = 'A1';
+    let counter = 1;
+    while (existingLabels.includes(newLabel)) {
+      counter++;
+      newLabel = `A${counter}`;
+    }
+
+    const newStatus: StandStatus = activeExhibitorId ? 'SOLD' : 'AVAILABLE';
+
+    const newStand = {
+      floorplan_id: floorplan.id,
+      event_id: eventId,
+      exhibitor_id: activeExhibitorId,
+      label: newLabel,
+      x,
+      y,
+      width,
+      height,
+      rotation: 0,
+      color: '#3b82f6',
+      notes: null,
+      status: newStatus,
+    };
+
+    const { data, error } = await supabase
+      .from('stands')
+      .insert(newStand)
+      .select()
+      .single();
+
+    if (error) {
+      toast({ variant: 'destructive', title: 'Fout', description: error.message });
+    } else if (data) {
+      const stand = { ...data, status: data.status as StandStatus };
+      setStands(prev => [...prev, stand]);
+      setSelectedStandIds(new Set([data.id]));
+      setDirty(true);
+      
+      auditLog({
+        event_id: eventId,
+        floorplan_id: floorplan.id,
+        action: 'stand.create',
+        entity_type: 'stand',
+        entity_id: data.id,
+        diff: { label: newLabel, status: newStatus, width, height },
+      });
+    }
+  }, [floorplan, eventId, canEdit, stands, activeExhibitorId, toast, auditLog]);
+
   const deleteStand = useCallback(async () => {
     if (selectedStandIds.size === 0 || !canEdit || !eventId) return;
 
@@ -593,6 +647,7 @@ export function useFloorplanData({ eventId, canEdit }: UseFloorplanDataProps) {
     fetchStands,
     getExhibitorName,
     addStand,
+    addStandWithSize,
     updateStand,
     updateStandWithAutoStatus,
     deleteStand,

@@ -2,6 +2,7 @@ import { forwardRef } from 'react';
 import { StandServiceIcons } from './StandServiceIcons';
 import { STAND_STATUS_CONFIG, StandStatus } from './StandLegend';
 import type { Stand, Floorplan, ExhibitorServices } from '@/types';
+import { EditorTool } from '@/hooks/floorplan/useDrawMode';
 
 interface FloorplanCanvasProps {
   floorplan: Floorplan | undefined;
@@ -20,6 +21,10 @@ interface FloorplanCanvasProps {
   onMouseMove: (e: React.MouseEvent) => void;
   onMouseUp: () => void;
   onResizeStart: (e: React.MouseEvent, standId: string, handle: string) => void;
+  // Draw mode props
+  activeTool?: EditorTool;
+  drawRect?: { x: number; y: number; width: number; height: number } | null;
+  performanceMode?: boolean;
 }
 
 export const FloorplanCanvasEnhanced = forwardRef<HTMLDivElement, FloorplanCanvasProps>(
@@ -40,8 +45,12 @@ export const FloorplanCanvasEnhanced = forwardRef<HTMLDivElement, FloorplanCanva
     onMouseMove,
     onMouseUp,
     onResizeStart,
+    activeTool = 'select',
+    drawRect,
+    performanceMode = false,
   }, ref) => {
     const filteredStands = stands.filter(s => statusFilters[s.status]);
+    const isDrawMode = activeTool === 'draw';
 
     return (
       <div
@@ -58,17 +67,30 @@ export const FloorplanCanvasEnhanced = forwardRef<HTMLDivElement, FloorplanCanva
             height: floorplan?.height || 800,
             transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoom})`,
             transformOrigin: '0 0',
-            cursor: spacePressed || isPanning ? 'grabbing' : 'grab',
+            cursor: isDrawMode ? 'crosshair' : spacePressed || isPanning ? 'grabbing' : 'grab',
           }}
           onMouseDown={(e) => onMouseDown(e)}
         >
-          {/* Background image */}
-          {floorplan?.background_url && (
+          {/* Background image - hide in performance mode */}
+          {floorplan?.background_url && !performanceMode && (
             <img
               src={floorplan.background_url}
               alt="Achtergrond"
               className="absolute inset-0 w-full h-full object-contain pointer-events-none"
               style={{ opacity: (floorplan.background_opacity || 100) / 100 }}
+            />
+          )}
+
+          {/* Draw rectangle preview */}
+          {drawRect && (
+            <div
+              className="absolute border-2 border-dashed border-primary bg-primary/20 pointer-events-none"
+              style={{
+                left: drawRect.x,
+                top: drawRect.y,
+                width: drawRect.width,
+                height: drawRect.height,
+              }}
             />
           )}
           
