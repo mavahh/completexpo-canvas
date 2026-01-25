@@ -42,7 +42,7 @@ export function DrawModeToolbar({
   if (!canEdit) return null;
 
   return (
-    <div className="flex items-center gap-1 border-l border-border pl-2 ml-2">
+    <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
       {/* Tool toggle */}
       <div className="flex items-center bg-muted rounded-md p-0.5">
         <Tooltip>
@@ -115,13 +115,11 @@ export function DrawModeToolbar({
         </Tooltip>
       </div>
 
-      {/* Stand Presets - hidden on smaller screens since main toolbar has add button */}
-      <div className="hidden xl:block">
-        <StandPresetSelector
-          onSelectPreset={onAddWithPreset}
-          onAddDefault={onAddDefault}
-        />
-      </div>
+      {/* Stand Presets - always show now since we have separate row */}
+      <StandPresetSelector
+        onSelectPreset={onAddWithPreset}
+        onAddDefault={onAddDefault}
+      />
 
       {/* Performance Mode */}
       <PerformanceModeToggle

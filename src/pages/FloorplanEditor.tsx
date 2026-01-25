@@ -114,8 +114,8 @@ export default function FloorplanEditor() {
           <EditSessionBanner editorNames={editor.otherEditorNames} />
         )}
 
-        {/* Unified toolbar */}
-        <div className="flex items-center bg-card border-b border-border flex-wrap">
+        {/* Toolbar Row 1: Navigation & View controls */}
+        <div className="flex items-center bg-card border-b border-border">
           <FloorplanEditorToolbar
             eventId={eventId || ''}
             floorplans={editor.floorplans}
@@ -148,9 +148,11 @@ export default function FloorplanEditor() {
             onSaveAll={editor.saveNow}
             onOpenWarnings={() => setRightPanelTab('warnings')}
           />
+        </div>
 
-          {/* Draw mode toolbar - integrated in same row on xl+, hidden on smaller */}
-          <div className="hidden xl:flex flex-shrink-0">
+        {/* Toolbar Row 2: Editor tools (only when canEdit) */}
+        {canEdit && (
+          <div className="flex items-center bg-card/80 border-b border-border px-2 py-1.5 gap-2">
             <DrawModeToolbar
               activeTool={editor.activeTool}
               onToolChange={editor.setActiveTool}
@@ -167,7 +169,7 @@ export default function FloorplanEditor() {
               canEdit={canEdit}
             />
           </div>
-        </div>
+        )}
 
         <div className="flex flex-1 overflow-hidden relative" ref={canvasContainerRef}>
           {/* Mobile panel toggle buttons */}
