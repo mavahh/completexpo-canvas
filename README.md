@@ -34,49 +34,60 @@ The floorplan editor provides a comprehensive toolset for designing and managing
 | `Space + Drag` | Pan the canvas |
 | `Scroll` | Zoom in/out |
 | `Shift + Click` | Multi-select stands |
-| `Escape` | Clear selection |
+| `Escape` | Clear selection / Exit draw mode |
 | `Delete` | Delete selected stand(s) |
+| `Ctrl/Cmd + Z` | Undo |
+| `Ctrl/Cmd + Shift + Z` | Redo |
+| `Ctrl/Cmd + D` | Duplicate selected stand(s) |
+| `Arrow keys` | Nudge selected stand(s) by grid step |
+| `Shift + Arrow` | Nudge by 5x grid step |
+| `Ctrl + Arrow` | Fine nudge (1px) |
 
-#### Zoom & Pan Controls
+#### Tools
 
-- **Mouse wheel**: Zoom centered on cursor
-- **Zoom buttons**: +/- buttons in toolbar
-- **Fit to screen**: Button to fit entire floorplan in view
-- **Reset zoom**: Return to 100% zoom
-- **Space + drag**: Pan around the canvas
+- **Select Tool**: Default tool for selecting, moving, and resizing stands
+- **Draw Tool**: Click and drag to draw new stands directly on canvas
+  - Shift while drawing keeps aspect ratio square
+  - Snap-to-grid is automatic
+
+#### Stand Presets
+
+Quick-add stands with preset sizes:
+- 3×2m, 3×3m, 4×3m, 4×4m, 6×4m, 6×6m
+
+#### Undo/Redo
+
+Full undo/redo support for:
+- Create, delete, move, resize stands
+- Status, label, exhibitor changes
+- Bulk operations
+
+#### Autosave
+
+- Automatic save with 800ms debounce
+- Status indicator: "Saved ✓" / "Saving..." / "Unsaved"
+- Confirmation dialog when leaving with unsaved changes
 
 #### Multi-Select & Bulk Actions
 
 When multiple stands are selected (Shift+click):
+- **Align**: Left, right, top, bottom, center H/V
+- **Distribute**: Horizontal or vertical (requires 3+ stands)
 - **Set status**: Apply same status to all selected
 - **Snap to grid**: Align all selected to grid
+- **Duplicate**: Copy selected stands
 - **Clear exhibitor**: Remove exhibitor links
 - **Rotate**: Rotate all selected by 90°
-- **Export labels**: Download CSV with stand data
 
-#### Label Generator
+#### Soft Locking (Collaboration)
 
-Generate sequential labels for stands:
+- Shows banner when other users are editing the same floorplan
+- Heartbeat system with 2-minute timeout
+- Non-blocking: warns but doesn't prevent editing
 
-1. Click "Labels" button in toolbar
-2. Choose mode:
-   - **Prefix + number**: A1, A2, A3... or Hall-001, Hall-002...
-   - **Numeric series**: 101, 102, 103...
-3. Set start number and padding
-4. Apply to selected stands or all stands
-5. Duplicates are automatically handled
+#### Performance Mode
 
-#### Warnings Engine
-
-The Warnings tab detects issues:
-- **Duplicate labels**: Same label used multiple times
-- **Out of bounds**: Stands outside floorplan area
-- **Overlapping stands**: Stands intersecting each other
-- **Missing labels**: Stands without labels
-
-**Fix helpers:**
-- "Fix duplicates": Auto-rename with unique suffixes
-- "Move into bounds": Clamp stands to valid area
+Toggle to hide background and icons during drag operations for smooth performance with 1000+ stands.
 
 #### Export Options
 
@@ -86,6 +97,20 @@ Export floorplans as PNG or PDF:
 - Include/exclude title and date
 - Hide grid lines
 - Select quality (1x, 2x, 3x)
+
+#### Tech Sheet Export
+
+Generate technical documentation:
+- **CSV**: Full stand data with services (power, water, lights, carpet, construction)
+- **PDF Summary**: Totals by power type, water/light counts, area calculations
+
+#### Print Labels
+
+Generate printable label sheets (PDF) with:
+- Stand number (large)
+- Exhibitor name
+- Event/hall info
+- Status indicator
 
 ### Templates
 

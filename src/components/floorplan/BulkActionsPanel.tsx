@@ -3,12 +3,15 @@ import { Card } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { StandStatusSelect } from './StandStatusSelect';
 import { StandStatus } from './StandLegend';
+import { AlignDistributePanel } from './AlignDistributePanel';
+import { AlignmentType, DistributionType } from '@/hooks/floorplan/alignmentUtils';
 import { 
   Grid3X3, 
   RotateCw, 
   X, 
   Download,
-  UserX
+  UserX,
+  Copy
 } from 'lucide-react';
 
 interface BulkActionsPanelProps {
@@ -19,6 +22,9 @@ interface BulkActionsPanelProps {
   onRotate: (degrees: number) => void;
   onExportLabels: () => void;
   onClearSelection: () => void;
+  onDuplicate?: () => void;
+  onAlign?: (type: AlignmentType) => void;
+  onDistribute?: (type: DistributionType) => void;
   disabled?: boolean;
 }
 
@@ -30,6 +36,9 @@ export function BulkActionsPanel({
   onRotate,
   onExportLabels,
   onClearSelection,
+  onDuplicate,
+  onAlign,
+  onDistribute,
   disabled = false,
 }: BulkActionsPanelProps) {
   return (
@@ -53,17 +62,30 @@ export function BulkActionsPanel({
           />
         </div>
 
-        <div className="grid grid-cols-2 gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={onSnapToGrid}
+        {/* Align & Distribute */}
+        {onAlign && onDistribute && (
+          <AlignDistributePanel
+            selectedCount={selectedCount}
+            onAlign={onAlign}
+            onDistribute={onDistribute}
+            onSnapToGrid={onSnapToGrid}
             disabled={disabled}
-            className="text-xs"
-          >
-            <Grid3X3 className="w-3 h-3 mr-1" />
-            Snap grid
-          </Button>
+          />
+        )}
+
+        <div className="grid grid-cols-2 gap-2">
+          {onDuplicate && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={onDuplicate}
+              disabled={disabled}
+              className="text-xs"
+            >
+              <Copy className="w-3 h-3 mr-1" />
+              Dupliceer
+            </Button>
+          )}
           <Button
             variant="outline"
             size="sm"
