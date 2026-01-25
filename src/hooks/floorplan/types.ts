@@ -3,6 +3,9 @@ import { StandStatus } from '@/components/floorplan/StandLegend';
 import { FloorplanWarning } from '@/components/floorplan/WarningsPanelEnhanced';
 import { LabelingConfigEnhanced, LabelingResult } from '@/components/floorplan/LabelingModalEnhanced';
 import { ExportOptionsEnhanced } from '@/components/floorplan/ExportDialogEnhanced';
+import { AlignmentType, DistributionType } from './alignmentUtils';
+
+export type EditorTool = 'select' | 'draw';
 
 export interface FloorplanEditorState {
   loading: boolean;
@@ -17,6 +20,7 @@ export interface FloorplanEditorState {
   activeExhibitorId: string | null;
   exhibitorSearch: string;
   eventName: string;
+  performanceMode: boolean;
 }
 
 export interface CanvasInteractionState {
@@ -50,9 +54,11 @@ export interface FloorplanEditorActions {
   
   // Stand actions
   addStand: () => Promise<void>;
+  addStandWithSize: (x: number, y: number, width: number, height: number) => Promise<void>;
   updateStand: (id: string, updates: Partial<Stand>) => void;
   updateStandWithAutoStatus: (id: string, updates: Partial<Stand>) => void;
   deleteStand: () => Promise<void>;
+  duplicateStands: (keepExhibitor?: boolean) => void;
   saveAll: () => Promise<void>;
   
   // Bulk actions
@@ -60,6 +66,8 @@ export interface FloorplanEditorActions {
   handleBulkSnapToGrid: () => void;
   handleBulkClearExhibitor: () => void;
   handleBulkRotate: (degrees: number) => void;
+  handleBulkAlign: (type: AlignmentType) => void;
+  handleBulkDistribute: (type: DistributionType) => void;
   handleExportLabels: () => void;
   
   // Labeling & warnings
@@ -71,6 +79,8 @@ export interface FloorplanEditorActions {
   handleBackgroundChange: (url: string | null, opacity: number) => void;
   handleFloorplanAdded: (floorplan: Floorplan) => void;
   handleExport: (options: ExportOptionsEnhanced) => Promise<void>;
+  handleExportTechSheet: () => void;
+  handlePrintLabels: () => void;
 }
 
 export interface CanvasInteractionActions {

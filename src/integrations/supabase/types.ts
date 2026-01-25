@@ -595,6 +595,38 @@ export type Database = {
           },
         ]
       }
+      floorplan_edit_sessions: {
+        Row: {
+          created_at: string
+          floorplan_id: string
+          id: string
+          last_seen_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          floorplan_id: string
+          id?: string
+          last_seen_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          floorplan_id?: string
+          id?: string
+          last_seen_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "floorplan_edit_sessions_floorplan_id_fkey"
+            columns: ["floorplan_id"]
+            isOneToOne: false
+            referencedRelation: "floorplans"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       floorplan_templates: {
         Row: {
           account_id: string | null
@@ -1425,6 +1457,7 @@ export type Database = {
         Args: { _shift_id: string }
         Returns: number
       }
+      cleanup_stale_edit_sessions: { Args: never; Returns: undefined }
       create_event_with_defaults: {
         Args: {
           _end_date: string
