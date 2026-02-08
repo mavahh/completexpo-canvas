@@ -11,6 +11,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
 import { ArrowLeft, Loader2, Upload, Trash2, FileText, Copy, Check, ExternalLink, Globe, RefreshCw } from 'lucide-react';
+import EmailTemplatesPanel from '@/components/settings/EmailTemplatesPanel';
 
 // Public Plan Settings Component
 function PublicPlanSettings({ eventId, canManage }: { eventId: string; canManage: boolean }) {
@@ -502,17 +503,7 @@ export default function EventSettings() {
         </TabsContent>
 
         <TabsContent value="email">
-          <Card>
-            <CardHeader>
-              <CardTitle>E-mail templates</CardTitle>
-              <CardDescription>Configureer e-mail templates voor dit evenement.</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <p className="text-muted-foreground">
-                E-mail configuratie komt binnenkort beschikbaar.
-              </p>
-            </CardContent>
-          </Card>
+          <EmailTemplatesPanel eventId={eventId || ''} canManage={canManageSettings} />
         </TabsContent>
 
         <TabsContent value="payments">
