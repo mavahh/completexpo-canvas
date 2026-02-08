@@ -37,6 +37,7 @@ import EventUsers from "./pages/EventUsers";
 import EventRequests from "./pages/EventRequests";
 import PublicRequest from "./pages/PublicRequest";
 import PlaceholderPage from "./pages/PlaceholderPage";
+import Settings from "./pages/Settings";
 import Templates from "./pages/Templates";
 import Home from "./pages/Home";
 import NotFound from "./pages/NotFound";
@@ -107,7 +108,7 @@ const App = () => (
               <Route path="/roles" element={<Roles />} />
               <Route path="/team" element={<Team />} />
               <Route path="/exhibitor-library" element={<ExhibitorLibrary />} />
-              <Route path="/settings" element={<PlaceholderPage title="Instellingen" />} />
+              <Route path="/settings" element={<Settings />} />
               <Route path="/templates" element={<Templates />} />
               <Route path="/crm" element={<PlaceholderPage title="CRM" />} />
               
