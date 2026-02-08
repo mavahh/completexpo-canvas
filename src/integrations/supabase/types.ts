@@ -216,6 +216,53 @@ export type Database = {
         }
         Relationships: []
       }
+      email_templates: {
+        Row: {
+          body_html: string
+          created_at: string
+          event_id: string
+          id: string
+          is_active: boolean
+          name: string
+          subject: string
+          type: Database["public"]["Enums"]["email_template_type"]
+          updated_at: string
+          variables: Json | null
+        }
+        Insert: {
+          body_html?: string
+          created_at?: string
+          event_id: string
+          id?: string
+          is_active?: boolean
+          name: string
+          subject?: string
+          type: Database["public"]["Enums"]["email_template_type"]
+          updated_at?: string
+          variables?: Json | null
+        }
+        Update: {
+          body_html?: string
+          created_at?: string
+          event_id?: string
+          id?: string
+          is_active?: boolean
+          name?: string
+          subject?: string
+          type?: Database["public"]["Enums"]["email_template_type"]
+          updated_at?: string
+          variables?: Json | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "email_templates_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       event_documents: {
         Row: {
           created_at: string
@@ -1599,6 +1646,12 @@ export type Database = {
       account_role: "OWNER" | "ADMIN" | "MEMBER"
       document_language: "NL" | "FR" | "EN" | "DE"
       document_type: "TERMS"
+      email_template_type:
+        | "CONFIRMATION"
+        | "INVITATION"
+        | "REMINDER"
+        | "REJECTION"
+        | "CUSTOM"
       event_role: "ADMIN" | "USER"
       invite_type:
         | "DEMO_APPROVAL"
@@ -1749,6 +1802,13 @@ export const Constants = {
       account_role: ["OWNER", "ADMIN", "MEMBER"],
       document_language: ["NL", "FR", "EN", "DE"],
       document_type: ["TERMS"],
+      email_template_type: [
+        "CONFIRMATION",
+        "INVITATION",
+        "REMINDER",
+        "REJECTION",
+        "CUSTOM",
+      ],
       event_role: ["ADMIN", "USER"],
       invite_type: [
         "DEMO_APPROVAL",
