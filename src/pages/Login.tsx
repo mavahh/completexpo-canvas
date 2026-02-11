@@ -7,6 +7,7 @@ import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2 } from 'lucide-react';
 import { z } from 'zod';
+import logo from '@/assets/logo.png';
 
 const loginSchema = z.object({
   email: z.string().email('Ongeldig e-mailadres'),
@@ -77,10 +78,7 @@ export default function Login() {
       <div className="w-full max-w-md">
         <div className="bg-card border border-border rounded-xl p-6 sm:p-8 shadow-lg animate-fade-in">
           <div className="text-center mb-8">
-            <div className="w-12 h-12 bg-primary rounded-xl flex items-center justify-center mx-auto mb-4">
-              <span className="text-primary-foreground font-bold text-xl">C</span>
-            </div>
-            <h1 className="text-2xl font-bold text-foreground">Completexpo</h1>
+            <img src={logo} alt="CompleteXpo" className="h-10 w-auto mx-auto mb-2" />
             <p className="text-muted-foreground mt-2">
               {isSignUp ? 'Maak een nieuw account aan' : 'Log in op je account'}
             </p>

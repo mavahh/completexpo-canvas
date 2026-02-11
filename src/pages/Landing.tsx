@@ -27,6 +27,9 @@ import {
   CheckCircle,
   Monitor
 } from 'lucide-react';
+import logo from '@/assets/logo.png';
+import screenshotFloorplan from '@/assets/screenshot-floorplan.png';
+import screenshotDashboard from '@/assets/screenshot-dashboard.png';
 
 // Smooth scroll helper
 const scrollToSection = (id: string) => {
@@ -63,10 +66,7 @@ function LandingHeader() {
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
           <div className="flex items-center gap-2">
-            <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
-              <Plus className="w-5 h-5 text-primary-foreground" />
-            </div>
-            <span className="font-bold text-lg text-foreground">Completexpo</span>
+            <img src={logo} alt="CompleteXpo" className="h-8 w-auto" />
           </div>
 
           {/* Desktop Nav */}
@@ -179,18 +179,16 @@ function HeroSection() {
             </div>
           </div>
 
-          {/* Right: Screenshot Placeholders */}
+          {/* Right: Screenshots */}
           <div className="order-1 lg:order-2 relative">
             {/* Main screenshot */}
-            <div className="bg-secondary/50 border-2 border-dashed border-border rounded-2xl p-8 aspect-[4/3] flex flex-col items-center justify-center">
-              <Monitor className="w-12 h-12 text-muted-foreground/50 mb-3" />
-              <span className="text-xs text-muted-foreground uppercase tracking-wider">Screenshot: Dashboard UI</span>
+            <div className="rounded-2xl overflow-hidden shadow-2xl border border-border">
+              <img src={screenshotDashboard} alt="Dashboard UI" className="w-full h-auto" />
             </div>
             
             {/* Overlapping floorplan screenshot */}
-            <div className="absolute -bottom-8 -right-4 lg:right-8 w-48 sm:w-56 bg-white border-2 border-dashed border-border rounded-xl p-4 shadow-lg flex flex-col items-center justify-center aspect-[4/3]">
-              <Layout className="w-8 h-8 text-muted-foreground/50 mb-2" />
-              <span className="text-[10px] text-muted-foreground uppercase tracking-wider text-center">Screenshot: Floorplan Editor</span>
+            <div className="absolute -bottom-8 -right-4 lg:right-8 w-48 sm:w-56 rounded-xl overflow-hidden shadow-lg border-2 border-card bg-card">
+              <img src={screenshotFloorplan} alt="Floorplan Editor" className="w-full h-auto" />
             </div>
           </div>
         </div>
@@ -350,10 +348,9 @@ function FloorplanSection() {
         </div>
 
         <div className="grid lg:grid-cols-2 gap-8 items-start">
-          {/* Screenshot placeholder */}
-          <div className="bg-[hsl(var(--landing-dark-card))] border border-white/10 rounded-2xl p-8 aspect-[4/3] flex flex-col items-center justify-center">
-            <Layout className="w-16 h-16 text-white/30 mb-4" />
-            <span className="text-xs text-white/50 uppercase tracking-wider">Screenshot: Floorplan Editor UI</span>
+          {/* Floorplan screenshot */}
+          <div className="rounded-2xl overflow-hidden border border-white/10 shadow-2xl">
+            <img src={screenshotFloorplan} alt="Floorplan Editor" className="w-full h-auto" />
           </div>
 
           {/* Feature cards */}
