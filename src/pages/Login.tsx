@@ -78,7 +78,7 @@ export default function Login() {
       <div className="w-full max-w-md">
         <div className="bg-card border border-border rounded-xl p-6 sm:p-8 shadow-lg animate-fade-in">
           <div className="text-center mb-8">
-            <img src={logo} alt="CompleteXpo" className="h-10 w-auto mx-auto mb-2" />
+            <img src={logo} alt="CompleteXpo" className="h-12 w-auto mx-auto mb-2" />
             <p className="text-muted-foreground mt-2">
               {isSignUp ? 'Maak een nieuw account aan' : 'Log in op je account'}
             </p>
