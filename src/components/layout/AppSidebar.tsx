@@ -140,7 +140,7 @@ export function AppSidebar() {
     <Sidebar collapsible="icon" className="border-r border-sidebar-border bg-sidebar-background">
       <SidebarHeader className="p-3 md:p-4 border-b border-sidebar-border">
         <Link to="/dashboard" className="flex items-center gap-2 md:gap-3">
-          <img src={logo} alt="CompleteXpo" className="h-8 md:h-9 w-auto flex-shrink-0 group-data-[collapsible=icon]:hidden" />
+          <img src={logo} alt="CompleteXpo" className="h-9 md:h-10 w-auto flex-shrink-0 group-data-[collapsible=icon]:hidden" />
           <div className="hidden group-data-[collapsible=icon]:flex w-9 h-9 md:w-10 md:h-10 bg-primary rounded-xl items-center justify-center shadow-md flex-shrink-0">
             <span className="text-primary-foreground font-bold text-base md:text-lg">C</span>
           </div>

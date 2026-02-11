@@ -66,7 +66,7 @@ function LandingHeader() {
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
           <div className="flex items-center gap-2">
-            <img src={logo} alt="CompleteXpo" className="h-8 w-auto" />
+            <img src={logo} alt="CompleteXpo" className="h-9 w-auto" />
           </div>
 
           {/* Desktop Nav */}
@@ -725,10 +725,7 @@ function Footer() {
       <div className="max-w-7xl mx-auto">
         <div className="flex flex-col sm:flex-row items-center justify-between gap-6">
           <div className="flex items-center gap-2">
-            <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
-              <Plus className="w-5 h-5 text-primary-foreground" />
-            </div>
-            <span className="font-bold text-lg text-foreground">Completexpo</span>
+            <img src={logo} alt="CompleteXpo" className="h-8 w-auto" />
           </div>
 
           <nav className="flex items-center gap-6">

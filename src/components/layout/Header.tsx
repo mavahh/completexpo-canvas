@@ -55,7 +55,7 @@ export function Header() {
       {/* Top bar */}
       <div className="flex items-center justify-between px-6 py-3 border-b border-border">
         <Link to="/dashboard" className="flex items-center gap-2">
-          <img src={logo} alt="CompleteXpo" className="h-8 w-auto" />
+          <img src={logo} alt="CompleteXpo" className="h-9 w-auto" />
         </Link>
 
         <div className="flex items-center gap-4">
