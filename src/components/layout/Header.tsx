@@ -4,6 +4,7 @@ import { usePermissions, GlobalModuleVisibility } from '@/hooks/usePermissions';
 import { useMultiTenant } from '@/hooks/useMultiTenant';
 import { Button } from '@/components/ui/button';
 import { LogOut, HelpCircle, Globe } from 'lucide-react';
+import logo from '@/assets/logo.png';
 
 interface TabConfig {
   label: string;
@@ -54,10 +55,7 @@ export function Header() {
       {/* Top bar */}
       <div className="flex items-center justify-between px-6 py-3 border-b border-border">
         <Link to="/dashboard" className="flex items-center gap-2">
-          <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
-            <span className="text-primary-foreground font-bold text-sm">C</span>
-          </div>
-          <span className="font-semibold text-lg text-foreground">Completexpo</span>
+          <img src={logo} alt="CompleteXpo" className="h-8 w-auto" />
         </Link>
 
         <div className="flex items-center gap-4">

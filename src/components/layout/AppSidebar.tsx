@@ -30,6 +30,7 @@ import {
   SidebarHeader,
 } from '@/components/ui/sidebar';
 import { cn } from '@/lib/utils';
+import logo from '@/assets/logo.png';
 
 interface NavItem {
   title: string;
@@ -139,12 +140,9 @@ export function AppSidebar() {
     <Sidebar collapsible="icon" className="border-r border-sidebar-border bg-sidebar-background">
       <SidebarHeader className="p-3 md:p-4 border-b border-sidebar-border">
         <Link to="/dashboard" className="flex items-center gap-2 md:gap-3">
-          <div className="w-9 h-9 md:w-10 md:h-10 bg-primary rounded-xl flex items-center justify-center shadow-md flex-shrink-0">
+          <img src={logo} alt="CompleteXpo" className="h-8 md:h-9 w-auto flex-shrink-0 group-data-[collapsible=icon]:hidden" />
+          <div className="hidden group-data-[collapsible=icon]:flex w-9 h-9 md:w-10 md:h-10 bg-primary rounded-xl items-center justify-center shadow-md flex-shrink-0">
             <span className="text-primary-foreground font-bold text-base md:text-lg">C</span>
-          </div>
-          <div className="group-data-[collapsible=icon]:hidden">
-            <span className="font-semibold text-foreground block text-sm md:text-base">ComplexExpo</span>
-            <span className="text-[10px] md:text-xs text-muted-foreground uppercase tracking-wider">Exhibition Suite</span>
           </div>
         </Link>
       </SidebarHeader>
