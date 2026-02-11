@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -13,12 +14,51 @@ interface EmailRequest {
 }
 
 const handler = async (req: Request): Promise<Response> => {
-  // Handle CORS preflight requests
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
+    // Authenticate the caller
+    const authHeader = req.headers.get("Authorization");
+    if (!authHeader?.startsWith("Bearer ")) {
+      return new Response(
+        JSON.stringify({ success: false, error: "Unauthorized" }),
+        { status: 401, headers: { "Content-Type": "application/json", ...corsHeaders } }
+      );
+    }
+
+    const supabase = createClient(
+      Deno.env.get("SUPABASE_URL")!,
+      Deno.env.get("SUPABASE_ANON_KEY")!,
+      { global: { headers: { Authorization: authHeader } } }
+    );
+
+    const token = authHeader.replace("Bearer ", "");
+    const { data: claimsData, error: claimsError } = await supabase.auth.getClaims(token);
+    if (claimsError || !claimsData?.claims) {
+      return new Response(
+        JSON.stringify({ success: false, error: "Unauthorized" }),
+        { status: 401, headers: { "Content-Type": "application/json", ...corsHeaders } }
+      );
+    }
+
+    const userId = claimsData.claims.sub;
+
+    // Verify the user is a super admin
+    const { data: isSuperAdmin } = await supabase
+      .from("super_admins")
+      .select("user_id")
+      .eq("user_id", userId)
+      .single();
+
+    if (!isSuperAdmin) {
+      return new Response(
+        JSON.stringify({ success: false, error: "Forbidden" }),
+        { status: 403, headers: { "Content-Type": "application/json", ...corsHeaders } }
+      );
+    }
+
     const resendApiKey = Deno.env.get("RESEND_API_KEY");
     
     if (!resendApiKey) {
@@ -30,13 +70,21 @@ const handler = async (req: Request): Promise<Response> => {
           message: "RESEND_API_KEY ontbreekt. Email is niet verzonden maar de aanvraag is goedgekeurd."
         }),
         {
-          status: 200, // Return 200 so the approval flow continues
+          status: 200,
           headers: { "Content-Type": "application/json", ...corsHeaders },
         }
       );
     }
 
     const { to_email, contact_name, company_name, invite_link }: EmailRequest = await req.json();
+
+    // Validate inputs
+    if (!to_email || !contact_name || !company_name || !invite_link) {
+      return new Response(
+        JSON.stringify({ success: false, error: "Missing required fields" }),
+        { status: 400, headers: { "Content-Type": "application/json", ...corsHeaders } }
+      );
+    }
 
     console.log(`Sending demo approval email to ${to_email}`);
 
@@ -93,7 +141,6 @@ const handler = async (req: Request): Promise<Response> => {
       </html>
     `;
 
-    // Send email via Resend API
     const emailResponse = await fetch("https://api.resend.com/emails", {
       method: "POST",
       headers: {
@@ -119,7 +166,7 @@ const handler = async (req: Request): Promise<Response> => {
           message: "Email kon niet verzonden worden. Controleer de Resend configuratie."
         }),
         {
-          status: 200, // Return 200 so approval flow continues
+          status: 200,
           headers: { "Content-Type": "application/json", ...corsHeaders },
         }
       );
@@ -140,7 +187,7 @@ const handler = async (req: Request): Promise<Response> => {
         message: "Er ging iets mis bij het versturen van de email."
       }),
       {
-        status: 200, // Return 200 so approval flow continues
+        status: 200,
         headers: { "Content-Type": "application/json", ...corsHeaders },
       }
     );
