@@ -41,6 +41,8 @@ import Settings from "./pages/Settings";
 import Templates from "./pages/Templates";
 import Home from "./pages/Home";
 import NotFound from "./pages/NotFound";
+import AdminVenues from "./pages/AdminVenues";
+import ProfessionalEditor from "./pages/ProfessionalEditor";
 
 // POS Pages
 import PosLayout from "./pages/pos/PosLayout";
@@ -119,6 +121,7 @@ const App = () => (
               <Route path="/admin/demo-requests" element={<DemoRequests />} />
               <Route path="/admin/email-outbox" element={<AdminEmailOutbox />} />
               <Route path="/admin/users" element={<AdminUsers />} />
+              <Route path="/admin/venues" element={<AdminVenues />} />
             </Route>
 
             {/* POS Kiosk - fullscreen, outside dashboard layout */}
@@ -126,6 +129,9 @@ const App = () => (
 
             {/* Fullscreen editor - outside dashboard layout */}
             <Route path="/events/:id/floorplan/editor" element={<ProtectedRoute><FloorplanFullscreenEditor /></ProtectedRoute>} />
+
+            {/* Professional CAD editor - outside dashboard layout */}
+            <Route path="/editor/:id" element={<ProtectedRoute><ProfessionalEditor /></ProtectedRoute>} />
 
             {/* Catch-all */}
             <Route path="*" element={<NotFound />} />

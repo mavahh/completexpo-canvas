@@ -13,6 +13,7 @@ import {
   Mail,
   Shield,
   Receipt,
+  Warehouse,
 } from 'lucide-react';
 import { useAuth } from '@/lib/auth';
 import { usePermissions, GlobalModuleVisibility } from '@/hooks/usePermissions';
@@ -60,6 +61,7 @@ const navItems: NavItem[] = [
 const adminItems: NavItem[] = [
   { title: 'Admin Dashboard', icon: Shield, path: '/admin', superAdminOnly: true },
   { title: 'Accounts', icon: Building2, path: '/admin/accounts', superAdminOnly: true },
+  { title: 'Venues & Hallen', icon: Warehouse, path: '/admin/venues', superAdminOnly: true },
   { title: 'Demo Aanvragen', icon: FileText, path: '/admin/demo-requests', superAdminOnly: true },
   { title: 'E-mail Outbox', icon: Mail, path: '/admin/email-outbox', superAdminOnly: true },
   { title: 'Gebruikers', icon: Users, path: '/admin/users', superAdminOnly: true },

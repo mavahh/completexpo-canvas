@@ -186,6 +186,50 @@ export type Database = {
           },
         ]
       }
+      editor_layers: {
+        Row: {
+          created_at: string
+          floorplan_id: string
+          id: string
+          is_locked: boolean
+          is_visible: boolean
+          name: string
+          sort_order: number
+          type: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          floorplan_id: string
+          id?: string
+          is_locked?: boolean
+          is_visible?: boolean
+          name: string
+          sort_order?: number
+          type?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          floorplan_id?: string
+          id?: string
+          is_locked?: boolean
+          is_visible?: boolean
+          name?: string
+          sort_order?: number
+          type?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "editor_layers_floorplan_id_fkey"
+            columns: ["floorplan_id"]
+            isOneToOne: false
+            referencedRelation: "floorplans"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       email_outbox: {
         Row: {
           body_text: string
@@ -408,6 +452,7 @@ export type Database = {
           account_id: string | null
           created_at: string
           end_date: string | null
+          hall_id: string | null
           id: string
           location: string | null
           name: string
@@ -420,6 +465,7 @@ export type Database = {
           account_id?: string | null
           created_at?: string
           end_date?: string | null
+          hall_id?: string | null
           id?: string
           location?: string | null
           name: string
@@ -432,6 +478,7 @@ export type Database = {
           account_id?: string | null
           created_at?: string
           end_date?: string | null
+          hall_id?: string | null
           id?: string
           location?: string | null
           name?: string
@@ -446,6 +493,13 @@ export type Database = {
             columns: ["account_id"]
             isOneToOne: false
             referencedRelation: "accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "events_hall_id_fkey"
+            columns: ["hall_id"]
+            isOneToOne: false
+            referencedRelation: "halls"
             referencedColumns: ["id"]
           },
         ]
@@ -776,6 +830,65 @@ export type Database = {
             columns: ["event_id"]
             isOneToOne: false
             referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      halls: {
+        Row: {
+          background_height_meters: number | null
+          background_needs_conversion: boolean
+          background_type: string | null
+          background_url: string | null
+          background_width_meters: number | null
+          created_at: string
+          height_meters: number
+          id: string
+          is_active: boolean
+          name: string
+          scale_ratio: number
+          updated_at: string
+          venue_id: string
+          width_meters: number
+        }
+        Insert: {
+          background_height_meters?: number | null
+          background_needs_conversion?: boolean
+          background_type?: string | null
+          background_url?: string | null
+          background_width_meters?: number | null
+          created_at?: string
+          height_meters?: number
+          id?: string
+          is_active?: boolean
+          name: string
+          scale_ratio?: number
+          updated_at?: string
+          venue_id: string
+          width_meters?: number
+        }
+        Update: {
+          background_height_meters?: number | null
+          background_needs_conversion?: boolean
+          background_type?: string | null
+          background_url?: string | null
+          background_width_meters?: number | null
+          created_at?: string
+          height_meters?: number
+          id?: string
+          is_active?: boolean
+          name?: string
+          scale_ratio?: number
+          updated_at?: string
+          venue_id?: string
+          width_meters?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "halls_venue_id_fkey"
+            columns: ["venue_id"]
+            isOneToOne: false
+            referencedRelation: "venues"
             referencedColumns: ["id"]
           },
         ]
@@ -1213,6 +1326,33 @@ export type Database = {
           },
         ]
       }
+      regions: {
+        Row: {
+          country: string
+          created_at: string
+          id: string
+          is_active: boolean
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          country?: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          country?: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          name?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       role_permissions: {
         Row: {
           created_at: string
@@ -1345,6 +1485,7 @@ export type Database = {
           event_id: string
           exhibitor_id: string | null
           floorplan_id: string
+          hall_id: string | null
           height: number
           id: string
           label: string
@@ -1362,6 +1503,7 @@ export type Database = {
           event_id: string
           exhibitor_id?: string | null
           floorplan_id: string
+          hall_id?: string | null
           height?: number
           id?: string
           label: string
@@ -1379,6 +1521,7 @@ export type Database = {
           event_id?: string
           exhibitor_id?: string | null
           floorplan_id?: string
+          hall_id?: string | null
           height?: number
           id?: string
           label?: string
@@ -1410,6 +1553,13 @@ export type Database = {
             columns: ["floorplan_id"]
             isOneToOne: false
             referencedRelation: "floorplans"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "stands_hall_id_fkey"
+            columns: ["hall_id"]
+            isOneToOne: false
+            referencedRelation: "halls"
             referencedColumns: ["id"]
           },
         ]
@@ -1495,6 +1645,47 @@ export type Database = {
         }
         Relationships: []
       }
+      venues: {
+        Row: {
+          address: string
+          city: string
+          created_at: string
+          id: string
+          is_active: boolean
+          name: string
+          region_id: string
+          updated_at: string
+        }
+        Insert: {
+          address?: string
+          city?: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          name: string
+          region_id: string
+          updated_at?: string
+        }
+        Update: {
+          address?: string
+          city?: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          name?: string
+          region_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "venues_region_id_fkey"
+            columns: ["region_id"]
+            isOneToOne: false
+            referencedRelation: "regions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
@@ -1516,6 +1707,7 @@ export type Database = {
           account_id: string | null
           created_at: string
           end_date: string | null
+          hall_id: string | null
           id: string
           location: string | null
           name: string
