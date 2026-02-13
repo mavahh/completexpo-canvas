@@ -43,6 +43,8 @@ import Home from "./pages/Home";
 import NotFound from "./pages/NotFound";
 import AdminVenues from "./pages/AdminVenues";
 import ProfessionalEditor from "./pages/ProfessionalEditor";
+import FloorplanEditorApp from "./pages/FloorplanEditorApp";
+import FloorplanLanding from "./pages/FloorplanLanding";
 
 // POS Pages
 import PosLayout from "./pages/pos/PosLayout";
@@ -80,6 +82,10 @@ const App = () => (
             <Route path="/invite/:token" element={<AcceptInvite />} />
             <Route path="/exhibitor/:token" element={<ExhibitorPortal />} />
             <Route path="/p/:token" element={<PublicFloorplan />} />
+
+            {/* Standalone floorplan editor routes */}
+            <Route path="/floorplan" element={<FloorplanLanding />} />
+            <Route path="/floorplan/event/:eventId/hall/:hallId" element={<FloorplanEditorApp />} />
 
             {/* Protected routes */}
             <Route element={<ProtectedRoute><DashboardLayout /></ProtectedRoute>}>
