@@ -1,19 +1,23 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Loader2, ArrowLeft, Maximize, Minimize, Grid3X3, Magnet, Save, Download, Eye } from 'lucide-react';
+import { Loader2, ArrowLeft, Maximize, Minimize, Grid3X3, Magnet, Save, Download, Eye, Crosshair, RotateCcw, Focus } from 'lucide-react';
+import { useAuth } from '@/lib/auth';
 import { useEventRole } from '@/hooks/useEventRole';
 import { useFullscreen } from '@/hooks/useFullscreen';
 import { useFloorplanData, useCanvasInteraction, useFloorplanExport, useUndoRedo, useAutosave } from '@/hooks/floorplan';
 import { useDrawMode } from '@/hooks/floorplan/useDrawMode';
+import { useBackgroundBounds } from '@/hooks/floorplan/useBackgroundBounds';
 import { FloorplanCanvasEnhanced } from '@/components/floorplan/FloorplanCanvasEnhanced';
 import { FloorplanRightSidebar } from '@/components/floorplan/FloorplanRightSidebar';
 import { ExportDialogEnhanced } from '@/components/floorplan/ExportDialogEnhanced';
-import { EditorLayersPanel, EditorLayer } from '@/components/editor/EditorLayersPanel';
+import { EditorLayersPanel } from '@/components/editor/EditorLayersPanel';
 import { MeasurementToolButton, MeasurementOverlay, useMeasurementTool } from '@/components/editor/MeasurementTool';
+import { BackgroundDebugPanel } from '@/components/floorplan/BackgroundDebugPanel';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from '@/components/ui/tooltip';
 import { Separator } from '@/components/ui/separator';
+import { Slider } from '@/components/ui/slider';
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select';
@@ -33,6 +37,7 @@ interface HallInfo {
 export default function ProfessionalEditor() {
   const { id: eventId } = useParams();
   const navigate = useNavigate();
+  const { user } = useAuth();
   const { canEdit, isReadOnly, loading: roleLoading } = useEventRole(eventId);
 
   const editorRef = useRef<HTMLDivElement>(null);
@@ -48,6 +53,8 @@ export default function ProfessionalEditor() {
   const [selectedHallId, setSelectedHallId] = useState<string | null>(null);
   const [scaleRatio, setScaleRatio] = useState(1);
   const [snapEnabled, setSnapEnabled] = useState(true);
+  const [isSuperAdmin, setIsSuperAdmin] = useState(false);
+  const [bgOpacity, setBgOpacity] = useState(100);
 
   // Core hooks
   const floorplanData = useFloorplanData({ eventId, canEdit });
@@ -62,6 +69,15 @@ export default function ProfessionalEditor() {
     setSelectedStandIds: floorplanData.setSelectedStandIds,
     updateStand: floorplanData.updateStand,
     deleteStand: floorplanData.deleteStand,
+  });
+
+  // Background bounds (SVG fit-to-view)
+  const bgBounds = useBackgroundBounds({
+    backgroundUrl: floorplanData.floorplan?.background_url,
+    containerRef: canvasContainerRef,
+    setZoom: canvasInteraction.setZoom,
+    setPan: canvasInteraction.setPan,
+    zoom: canvasInteraction.zoom,
   });
 
   const undoRedo = useUndoRedo({
@@ -101,11 +117,21 @@ export default function ProfessionalEditor() {
     setShowGrid: canvasInteraction.setShowGrid,
   });
 
+  // Check superadmin
+  useEffect(() => {
+    if (!user) return;
+    supabase
+      .from('super_admins')
+      .select('id')
+      .eq('user_id', user.id)
+      .maybeSingle()
+      .then(({ data }) => setIsSuperAdmin(!!data));
+  }, [user]);
+
   // Fetch event + halls
   useEffect(() => {
     if (!eventId) return;
     const fetchEventHalls = async () => {
-      // Get event's hall_id
       const { data: eventData } = await supabase
         .from('events')
         .select('hall_id')
@@ -113,7 +139,6 @@ export default function ProfessionalEditor() {
         .single();
 
       if (eventData?.hall_id) {
-        // Get the hall
         const { data: hallData } = await supabase
           .from('halls')
           .select('id, name, width_meters, height_meters, scale_ratio, background_url, background_type, venue_id')
@@ -124,7 +149,6 @@ export default function ProfessionalEditor() {
           setSelectedHallId(hallData.id);
           setScaleRatio(Number(hallData.scale_ratio) || 1);
 
-          // Get sibling halls from same venue
           const { data: siblingHalls } = await supabase
             .from('halls')
             .select('id, name, width_meters, height_meters, scale_ratio, background_url, background_type')
@@ -142,6 +166,13 @@ export default function ProfessionalEditor() {
   // Fetch floorplan data
   useEffect(() => { floorplanData.fetchData(); }, [eventId]);
   useEffect(() => { floorplanData.fetchStands(); }, [floorplanData.selectedFloorplanId]);
+
+  // Sync bg opacity from floorplan
+  useEffect(() => {
+    if (floorplanData.floorplan) {
+      setBgOpacity(floorplanData.floorplan.background_opacity || 100);
+    }
+  }, [floorplanData.floorplan?.background_opacity]);
 
   // Autosave trigger
   useEffect(() => {
@@ -214,6 +245,14 @@ export default function ProfessionalEditor() {
     canvasInteraction.handleMouseUp();
   };
 
+  const handleBgOpacityChange = (value: number[]) => {
+    const opacity = value[0];
+    setBgOpacity(opacity);
+    if (floorplanData.floorplan) {
+      floorplanData.handleBackgroundChange(floorplanData.floorplan.background_url || null, opacity);
+    }
+  };
+
   const zoomPercent = Math.round(canvasInteraction.zoom * 100);
 
   if (floorplanData.loading || roleLoading) {
@@ -244,6 +283,34 @@ export default function ProfessionalEditor() {
               <span className="text-xs font-mono w-10 text-center">{zoomPercent}%</span>
               <Button variant="ghost" size="icon" className="h-6 w-6 text-xs" onClick={() => canvasInteraction.setZoom(Math.min(5, canvasInteraction.zoom + 0.1))}>+</Button>
             </div>
+
+            {/* Fit / Reset / Center */}
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button variant="ghost" size="icon" className="h-7 w-7" onClick={bgBounds.fitToBackground}>
+                  <Crosshair className="w-4 h-4" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent side="bottom"><p>Fit to background</p></TooltipContent>
+            </Tooltip>
+
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button variant="ghost" size="icon" className="h-7 w-7" onClick={bgBounds.resetView}>
+                  <RotateCcw className="w-4 h-4" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent side="bottom"><p>Reset view</p></TooltipContent>
+            </Tooltip>
+
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button variant="ghost" size="icon" className="h-7 w-7" onClick={bgBounds.centerOnBackground}>
+                  <Focus className="w-4 h-4" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent side="bottom"><p>Center</p></TooltipContent>
+            </Tooltip>
 
             <Separator orientation="vertical" className="h-5 mx-1" />
 
@@ -279,6 +346,25 @@ export default function ProfessionalEditor() {
 
             {/* Measurement */}
             <MeasurementToolButton active={measurement.active} onToggle={measurement.toggle} />
+
+            {/* Background opacity slider */}
+            {floorplanData.floorplan?.background_url && (
+              <>
+                <Separator orientation="vertical" className="h-5 mx-1" />
+                <div className="flex items-center gap-1.5">
+                  <span className="text-[10px] text-muted-foreground whitespace-nowrap">BG</span>
+                  <Slider
+                    value={[bgOpacity]}
+                    min={0}
+                    max={100}
+                    step={5}
+                    className="w-16"
+                    onValueChange={handleBgOpacityChange}
+                  />
+                  <span className="text-[10px] text-muted-foreground w-6">{bgOpacity}%</span>
+                </div>
+              </>
+            )}
 
             {/* Hall switch */}
             {eventHalls.length > 1 && (
@@ -329,8 +415,22 @@ export default function ProfessionalEditor() {
           </div>
         </div>
 
+        {/* Background loading state */}
+        {bgBounds.loading && (
+          <div className="flex items-center gap-2 px-3 py-1.5 bg-muted border-b border-border text-xs text-muted-foreground">
+            <Loader2 className="w-3 h-3 animate-spin" />
+            Background loading…
+          </div>
+        )}
+        {bgBounds.error && (
+          <div className="flex items-center gap-2 px-3 py-1.5 bg-destructive/10 border-b border-destructive/20 text-xs text-destructive">
+            <span>⚠ {bgBounds.error}</span>
+            <Button variant="ghost" size="sm" className="h-5 text-[10px]" onClick={bgBounds.fitToBackground}>Try fit</Button>
+          </div>
+        )}
+
         {/* Main content */}
-        <div className="flex flex-1 overflow-hidden" ref={canvasContainerRef}>
+        <div className="flex flex-1 overflow-hidden relative" ref={canvasContainerRef}>
           {/* Layers panel */}
           {showLayers && (
             <div className="w-48 border-r border-border bg-card p-2 overflow-y-auto">
@@ -390,6 +490,22 @@ export default function ProfessionalEditor() {
               onFixDuplicates={canEdit ? floorplanData.handleFixDuplicates : undefined}
               onClampToBounds={canEdit ? floorplanData.handleClampToBounds : undefined}
               getExhibitorName={floorplanData.getExhibitorName}
+            />
+          )}
+
+          {/* Debug panel - superadmin only */}
+          {isSuperAdmin && (
+            <BackgroundDebugPanel
+              backgroundUrl={floorplanData.floorplan?.background_url}
+              svgViewBox={bgBounds.svgViewBox}
+              computedBounds={bgBounds.bounds}
+              viewportSize={bgBounds.getViewportSize()}
+              cameraPan={canvasInteraction.pan}
+              cameraZoom={canvasInteraction.zoom}
+              onFitBackground={bgBounds.fitToBackground}
+              onSetEmergencyZoom={bgBounds.setEmergencyZoom}
+              onCenter={bgBounds.centerOnBackground}
+              onLogSvg={bgBounds.logSvgHtml}
             />
           )}
         </div>

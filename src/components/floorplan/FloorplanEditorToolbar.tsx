@@ -2,7 +2,7 @@ import { Button } from '@/components/ui/button';
 import { 
   ArrowLeft, Plus, Save, ZoomIn, ZoomOut, Grid3X3, Loader2,
   RotateCcw, Check, Moon, Sun, Lock, Tag, Download, AlertTriangle, 
-  Maximize2, Minimize2, Crosshair, Layout, Menu
+  Maximize2, Minimize2, Crosshair, Layout, Menu, Focus
 } from 'lucide-react';
 import { HallSelector } from './HallSelector';
 import { BackgroundUpload } from './BackgroundUpload';
@@ -46,6 +46,9 @@ interface FloorplanEditorToolbarProps {
   onAddStand: () => void;
   onSaveAll: () => void;
   onOpenWarnings: () => void;
+  onFitToBackground?: () => void;
+  onResetView?: () => void;
+  onCenterView?: () => void;
 }
 
 export function FloorplanEditorToolbar({
@@ -79,6 +82,9 @@ export function FloorplanEditorToolbar({
   onAddStand,
   onSaveAll,
   onOpenWarnings,
+  onFitToBackground,
+  onResetView,
+  onCenterView,
 }: FloorplanEditorToolbarProps) {
   return (
     <div className={`flex items-center justify-between p-2 gap-2 flex-1 min-w-0 ${isFullscreen ? 'px-4' : 'sm:p-3'}`}>
@@ -120,6 +126,11 @@ export function FloorplanEditorToolbar({
           <Button variant="ghost" size="icon" className="h-8 w-8" onClick={onFitToScreen} title="Fit to screen">
             <Crosshair className="w-4 h-4" />
           </Button>
+          {onFitToBackground && (
+            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={onFitToBackground} title="Fit to background">
+              <Focus className="w-4 h-4" />
+            </Button>
+          )}
         </div>
         
         {/* Grid and view controls - hidden on mobile */}

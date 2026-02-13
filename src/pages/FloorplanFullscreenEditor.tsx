@@ -1,21 +1,26 @@
 import { useEffect, useRef, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Loader2, ArrowLeft, Eye } from 'lucide-react';
+import { useAuth } from '@/lib/auth';
 import { useEventRole } from '@/hooks/useEventRole';
 import { useDarkMode } from '@/hooks/useDarkMode';
 import { useFullscreen } from '@/hooks/useFullscreen';
 import { useFloorplanData, useCanvasInteraction, useFloorplanExport } from '@/hooks/floorplan';
+import { useBackgroundBounds } from '@/hooks/floorplan/useBackgroundBounds';
 import { FloorplanEditorToolbar } from '@/components/floorplan/FloorplanEditorToolbar';
 import { FloorplanRightSidebar } from '@/components/floorplan/FloorplanRightSidebar';
 import { FloorplanCanvasEnhanced } from '@/components/floorplan/FloorplanCanvasEnhanced';
 import { LabelingModalEnhanced } from '@/components/floorplan/LabelingModalEnhanced';
 import { ExportDialogEnhanced } from '@/components/floorplan/ExportDialogEnhanced';
 import { SaveAsTemplateDialog } from '@/components/floorplan/SaveAsTemplateDialog';
+import { BackgroundDebugPanel } from '@/components/floorplan/BackgroundDebugPanel';
 import { Badge } from '@/components/ui/badge';
+import { supabase } from '@/integrations/supabase/client';
 
 export default function FloorplanFullscreenEditor() {
   const { id: eventId } = useParams();
   const navigate = useNavigate();
+  const { user } = useAuth();
   const { canEdit, isReadOnly, loading: roleLoading } = useEventRole(eventId);
   const { isDark, toggle: toggleDarkMode } = useDarkMode();
   
@@ -31,6 +36,7 @@ export default function FloorplanFullscreenEditor() {
   const [showTemplateDialog, setShowTemplateDialog] = useState(false);
   const [rightPanelTab, setRightPanelTab] = useState('properties');
   const [showRightPanel, setShowRightPanel] = useState(true);
+  const [isSuperAdmin, setIsSuperAdmin] = useState(false);
 
   // Floorplan data hook
   const floorplanData = useFloorplanData({ eventId, canEdit });
@@ -48,6 +54,15 @@ export default function FloorplanFullscreenEditor() {
     deleteStand: floorplanData.deleteStand,
   });
 
+  // Background bounds (SVG fit-to-view)
+  const bgBounds = useBackgroundBounds({
+    backgroundUrl: floorplanData.floorplan?.background_url,
+    containerRef: canvasContainerRef,
+    setZoom: canvasInteraction.setZoom,
+    setPan: canvasInteraction.setPan,
+    zoom: canvasInteraction.zoom,
+  });
+
   // Export hook
   const { handleExport } = useFloorplanExport({
     canvasRef,
@@ -58,6 +73,17 @@ export default function FloorplanFullscreenEditor() {
     setShowGrid: canvasInteraction.setShowGrid,
   });
 
+  // Check superadmin
+  useEffect(() => {
+    if (!user) return;
+    supabase
+      .from('super_admins')
+      .select('id')
+      .eq('user_id', user.id)
+      .maybeSingle()
+      .then(({ data }) => setIsSuperAdmin(!!data));
+  }, [user]);
+
   // Initial data fetch
   useEffect(() => {
     floorplanData.fetchData();
@@ -67,15 +93,6 @@ export default function FloorplanFullscreenEditor() {
   useEffect(() => {
     floorplanData.fetchStands();
   }, [floorplanData.selectedFloorplanId]);
-
-  // Auto-enter fullscreen on mount (optional - can be removed)
-  useEffect(() => {
-    // Give the user a moment before fullscreen prompt
-    const timer = setTimeout(() => {
-      // Don't auto-fullscreen, let user choose
-    }, 500);
-    return () => clearTimeout(timer);
-  }, []);
 
   if (floorplanData.loading || roleLoading) {
     return (
@@ -154,9 +171,12 @@ export default function FloorplanFullscreenEditor() {
         onAddStand={floorplanData.addStand}
         onSaveAll={floorplanData.saveAll}
         onOpenWarnings={() => setRightPanelTab('warnings')}
+        onFitToBackground={bgBounds.fitToBackground}
+        onResetView={bgBounds.resetView}
+        onCenterView={bgBounds.centerOnBackground}
       />
 
-      <div className="flex flex-1 overflow-hidden">
+      <div className="flex flex-1 overflow-hidden relative" ref={canvasContainerRef}>
         {/* Canvas takes maximum space */}
         <FloorplanCanvasEnhanced
           ref={canvasRef}
@@ -206,6 +226,21 @@ export default function FloorplanFullscreenEditor() {
             onFixDuplicates={canEdit ? floorplanData.handleFixDuplicates : undefined}
             onClampToBounds={canEdit ? floorplanData.handleClampToBounds : undefined}
             getExhibitorName={floorplanData.getExhibitorName}
+          />
+        )}
+        {/* Debug panel - superadmin only */}
+        {isSuperAdmin && (
+          <BackgroundDebugPanel
+            backgroundUrl={floorplanData.floorplan?.background_url}
+            svgViewBox={bgBounds.svgViewBox}
+            computedBounds={bgBounds.bounds}
+            viewportSize={bgBounds.getViewportSize()}
+            cameraPan={canvasInteraction.pan}
+            cameraZoom={canvasInteraction.zoom}
+            onFitBackground={bgBounds.fitToBackground}
+            onSetEmergencyZoom={bgBounds.setEmergencyZoom}
+            onCenter={bgBounds.centerOnBackground}
+            onLogSvg={bgBounds.logSvgHtml}
           />
         )}
       </div>
