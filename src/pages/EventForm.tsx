@@ -9,6 +9,7 @@ import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, ArrowLeft } from 'lucide-react';
 import { useEffect } from 'react';
+import { HallSelector } from '@/components/events/HallSelector';
 
 export default function EventForm() {
   const { id } = useParams();
@@ -23,6 +24,7 @@ export default function EventForm() {
     location: '',
     start_date: '',
     end_date: '',
+    hall_id: null as string | null,
   });
 
   useEffect(() => {
@@ -53,6 +55,7 @@ export default function EventForm() {
       location: data.location || '',
       start_date: data.start_date || '',
       end_date: data.end_date || '',
+      hall_id: (data as any).hall_id || null,
     });
     setFetching(false);
   };
@@ -71,6 +74,7 @@ export default function EventForm() {
             location: form.location || null,
             start_date: form.start_date || null,
             end_date: form.end_date || null,
+            hall_id: form.hall_id || null,
           })
           .eq('id', id);
 
@@ -175,6 +179,16 @@ export default function EventForm() {
                 onChange={(e) => setForm({ ...form, end_date: e.target.value })}
               />
             </div>
+          </div>
+
+          {/* Hall Selection */}
+          <div className="space-y-2 pt-2 border-t">
+            <Label className="text-base font-semibold">Hal selectie</Label>
+            <p className="text-sm text-muted-foreground mb-2">Koppel dit evenement aan een hal voor schaalgetrouwe plattegronden.</p>
+            <HallSelector
+              value={form.hall_id}
+              onChange={(hallId) => setForm({ ...form, hall_id: hallId })}
+            />
           </div>
 
           <div className="flex gap-3 pt-4">
