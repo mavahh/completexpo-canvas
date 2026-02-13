@@ -1,55 +1,77 @@
 /**
- * FloorplanEditorApp – standalone fullscreen editor for a specific event + hall.
+ * FloorplanEditorApp – integrated fullscreen editor for a specific event + hall.
  * Route: /floorplan/event/:eventId/hall/:hallId
+ *
+ * Single EditorShell: topbar + left panel + canvas + right panel + status bar.
  */
 
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Loader2, ArrowLeft, Layers, ZoomIn, ZoomOut, Maximize, Crosshair } from 'lucide-react';
+import { Loader2 } from 'lucide-react';
 import { useAuth } from '@/lib/auth';
 import { supabase } from '@/integrations/supabase/client';
-import { useEditorCamera, useBasemapLoader } from '@/hooks/floorplan-editor';
-import { BasemapRenderer, LayerPanel, StatusBar } from '@/components/floorplan-editor';
-import { screenToWorld } from '@/lib/camera';
+import { useEditorCamera } from '@/hooks/floorplan-editor/useEditorCamera';
+import { useBasemapLoader } from '@/hooks/floorplan-editor/useBasemapLoader';
+import { useEditorObjects } from '@/hooks/floorplan-editor/useEditorObjects';
+import { useEditorAutosave } from '@/hooks/floorplan-editor/useEditorAutosave';
+import { EditorTopbar, type EditorToolType } from '@/components/floorplan-editor/EditorTopbar';
+import { EditorCanvas } from '@/components/floorplan-editor/EditorCanvas';
+import { EditorLeftPanel } from '@/components/floorplan-editor/EditorLeftPanel';
+import { EditorRightPanel } from '@/components/floorplan-editor/EditorRightPanel';
+import { EditorStatusBar } from '@/components/floorplan-editor/EditorStatusBar';
 import { Button } from '@/components/ui/button';
-import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from '@/components/ui/tooltip';
-import { Separator } from '@/components/ui/separator';
-import {
-  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
-} from '@/components/ui/select';
-import type { BasemapLayer, BBox } from '@/types/floorplan-editor';
+import { TooltipProvider } from '@/components/ui/tooltip';
+import type { BasemapLayer, WorldPoint } from '@/types/floorplan-editor';
 
-// Dev mode: bypass auth when VITE_DEV_MODE=true
 const DEV_MODE = import.meta.env.VITE_DEV_MODE === 'true';
 
-interface HallOption {
-  id: string;
-  name: string;
-}
+interface HallOption { id: string; name: string; }
+interface Exhibitor { id: string; name: string; }
 
 export default function FloorplanEditorApp() {
   const { eventId, hallId } = useParams();
   const navigate = useNavigate();
   const { user, loading: authLoading } = useAuth();
+  const containerRef = useRef<HTMLDivElement>(null!);
 
-  const containerRef = useRef<HTMLDivElement>(null);
-
-  // ---- State ----
+  // ---- UI state ----
   const [eventName, setEventName] = useState('');
   const [hallOptions, setHallOptions] = useState<HallOption[]>([]);
-  const [selectedHallId, setSelectedHallId] = useState<string | null>(hallId || null);
-  const [showLayers, setShowLayers] = useState(true);
+  const [selectedHallId, setSelectedHallId] = useState(hallId || '');
+  const [exhibitors, setExhibitors] = useState<Exhibitor[]>([]);
+  const [activeTool, setActiveTool] = useState<EditorToolType>('select');
+  const [showGrid, setShowGrid] = useState(true);
+  const [snapEnabled, setSnapEnabled] = useState(true);
   const [layers, setLayers] = useState<BasemapLayer[]>([]);
-  const [cursorWorld, setCursorWorld] = useState<{ x: number; y: number } | null>(null);
+  const [cursorWorld, setCursorWorld] = useState<WorldPoint | null>(null);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [leftCollapsed, setLeftCollapsed] = useState(false);
+  const [rightCollapsed, setRightCollapsed] = useState(false);
 
   // ---- Basemap ----
-  const { basemap, loading: basemapLoading, error: basemapError } = useBasemapLoader(selectedHallId);
+  const { basemap, loading: basemapLoading, error: basemapError } = useBasemapLoader(selectedHallId || null);
 
   // ---- Camera ----
   const { camera, fit, zoomIn, zoomOut, zoomPercent, pointerHandlers, spacePressed } = useEditorCamera({
     containerRef,
     initialBBox: basemap?.bbox,
   });
+
+  // ---- Objects ----
+  const editorObjects = useEditorObjects();
+
+  // ---- Autosave ----
+  const { saveStatus, saveNow } = useEditorAutosave({
+    eventId,
+    hallId: selectedHallId,
+    objects: editorObjects.objects,
+    version: editorObjects.version,
+    dirty: editorObjects.dirty,
+    onSaved: editorObjects.markSaved,
+  });
+
+  // Grid size from basemap units
+  const gridSize = basemap?.units === 'mm' ? 1000 : 1; // 1m grid
 
   // Sync layers from basemap
   useEffect(() => {
@@ -64,7 +86,7 @@ export default function FloorplanEditorApp() {
   // ---- Load event info & halls ----
   useEffect(() => {
     if (!eventId) return;
-    const loadEvent = async () => {
+    (async () => {
       const { data: ev } = await supabase
         .from('events')
         .select('name, hall_id')
@@ -73,54 +95,91 @@ export default function FloorplanEditorApp() {
 
       if (ev) {
         setEventName(ev.name || '');
-        // If no hallId in URL, use event's hall_id
-        if (!hallId && ev.hall_id) {
-          setSelectedHallId(ev.hall_id);
-        }
+        if (!hallId && ev.hall_id) setSelectedHallId(ev.hall_id);
 
-        // Load sibling halls
         if (ev.hall_id) {
-          const { data: hall } = await supabase
-            .from('halls')
-            .select('venue_id')
-            .eq('id', ev.hall_id)
-            .single();
-
+          const { data: hall } = await supabase.from('halls').select('venue_id').eq('id', ev.hall_id).single();
           if (hall) {
             const { data: halls } = await supabase
-              .from('halls')
-              .select('id, name')
-              .eq('venue_id', hall.venue_id)
-              .eq('is_active', true)
-              .order('name');
-
+              .from('halls').select('id, name')
+              .eq('venue_id', hall.venue_id).eq('is_active', true).order('name');
             setHallOptions(halls || []);
           }
         }
       }
-    };
-    loadEvent();
+
+      // Load exhibitors for this event
+      const { data: exData } = await supabase
+        .from('exhibitors').select('id, name')
+        .eq('event_id', eventId).order('name');
+      setExhibitors(exData || []);
+    })();
   }, [eventId, hallId]);
+
+  // ---- Load layout objects ----
+  useEffect(() => {
+    if (!eventId || !selectedHallId) return;
+    (async () => {
+      try {
+        const { data } = await supabase.functions.invoke('event-layout', {
+          method: 'POST',
+          body: { method: 'GET', eventId, hallId: selectedHallId },
+        });
+        if (data?.objects) {
+          editorObjects.loadObjects(data.objects, data.version || 0);
+        }
+      } catch (e) {
+        console.error('Failed to load layout:', e);
+      }
+    })();
+  }, [eventId, selectedHallId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // ---- Layer toggle ----
   const toggleLayer = useCallback((layerId: string) => {
     setLayers(prev => prev.map(l => l.id === layerId ? { ...l, visible: !l.visible } : l));
   }, []);
 
-  // ---- Cursor tracking ----
-  const onMouseMove = useCallback((e: React.MouseEvent) => {
-    if (!containerRef.current) return;
-    const rect = containerRef.current.getBoundingClientRect();
-    const screen = { x: e.clientX - rect.left, y: e.clientY - rect.top };
-    setCursorWorld(screenToWorld(screen, camera));
-  }, [camera]);
-
   // ---- Hall switch ----
   const handleHallSwitch = (newHallId: string) => {
     setSelectedHallId(newHallId);
-    // Update URL
     navigate(`/floorplan/event/${eventId}/hall/${newHallId}`, { replace: true });
   };
+
+  // ---- Keyboard shortcuts ----
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      const t = e.target as HTMLElement;
+      if (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.tagName === 'SELECT') return;
+
+      // Tool shortcuts
+      if (e.key === 'v' || e.key === 'V') { setActiveTool('select'); return; }
+      if (e.key === 'r' || e.key === 'R') { setActiveTool('draw-rect'); return; }
+      if (e.key === 'p' || e.key === 'P') { setActiveTool('draw-poly'); return; }
+      if (e.key === 't' || e.key === 'T') { setActiveTool('text'); return; }
+      if (e.key === 'm' || e.key === 'M') { setActiveTool('measure'); return; }
+
+      // Undo/redo
+      if ((e.ctrlKey || e.metaKey) && e.key === 'z' && !e.shiftKey) { e.preventDefault(); editorObjects.undo(); return; }
+      if ((e.ctrlKey || e.metaKey) && (e.key === 'Z' || (e.key === 'z' && e.shiftKey))) { e.preventDefault(); editorObjects.redo(); return; }
+
+      // Delete
+      if ((e.key === 'Delete' || e.key === 'Backspace') && selectedIds.size > 0) {
+        e.preventDefault();
+        editorObjects.deleteObjects(selectedIds);
+        setSelectedIds(new Set());
+        return;
+      }
+
+      // Escape
+      if (e.key === 'Escape') {
+        setSelectedIds(new Set());
+        setActiveTool('select');
+        return;
+      }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [selectedIds, editorObjects]);
 
   // ---- Auth check ----
   if (!DEV_MODE && authLoading) {
@@ -137,129 +196,101 @@ export default function FloorplanEditorApp() {
 
   return (
     <TooltipProvider>
-      <div className="fixed inset-0 z-50 bg-background flex flex-col">
-        {/* ---- Toolbar ---- */}
-        <div className="flex items-center justify-between h-10 px-3 border-b border-border bg-card shrink-0">
-          {/* Left */}
-          <div className="flex items-center gap-2">
-            <Button variant="ghost" size="sm" className="h-7 gap-1.5 text-xs" onClick={() => navigate(`/events/${eventId}`)}>
-              <ArrowLeft className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">Terug</span>
-            </Button>
-            <Separator orientation="vertical" className="h-5" />
-            <span className="text-xs font-medium text-foreground truncate max-w-[200px]">{eventName}</span>
-          </div>
+      <div className="fixed inset-0 z-50 bg-background flex flex-col select-none">
+        {/* Topbar */}
+        <EditorTopbar
+          eventId={eventId || ''}
+          eventName={eventName}
+          activeTool={activeTool}
+          onToolChange={setActiveTool}
+          zoomPercent={zoomPercent}
+          onZoomIn={zoomIn}
+          onZoomOut={zoomOut}
+          onFit={() => basemap?.bbox && fit(basemap.bbox)}
+          showGrid={showGrid}
+          onToggleGrid={() => setShowGrid(g => !g)}
+          snapEnabled={snapEnabled}
+          onToggleSnap={() => setSnapEnabled(s => !s)}
+          hallOptions={hallOptions}
+          selectedHallId={selectedHallId}
+          onHallSwitch={handleHallSwitch}
+          canUndo={editorObjects.canUndo}
+          canRedo={editorObjects.canRedo}
+          onUndo={editorObjects.undo}
+          onRedo={editorObjects.redo}
+          saveStatus={saveStatus}
+          onSaveNow={saveNow}
+        />
 
-          {/* Center: Zoom & tools */}
-          <div className="flex items-center gap-1">
-            {/* Zoom controls */}
-            <div className="flex items-center bg-muted rounded-md px-1.5 py-0.5 gap-1">
-              <Button variant="ghost" size="icon" className="h-6 w-6 text-xs" onClick={zoomOut}>−</Button>
-              <span className="text-xs font-mono w-10 text-center">{zoomPercent}%</span>
-              <Button variant="ghost" size="icon" className="h-6 w-6 text-xs" onClick={zoomIn}>+</Button>
-            </div>
+        {/* Main area: left panel + canvas + right panel */}
+        <div className="flex-1 flex min-h-0">
+          {/* Left Panel */}
+          <EditorLeftPanel
+            objects={editorObjects.objects}
+            exhibitors={exhibitors}
+            selectedIds={selectedIds}
+            onSelect={setSelectedIds}
+            collapsed={leftCollapsed}
+            onToggleCollapse={() => setLeftCollapsed(c => !c)}
+          />
 
-            {/* Fit to screen */}
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => basemap?.bbox && fit(basemap.bbox)}>
-                  <Crosshair className="w-4 h-4" />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent side="bottom"><p>Fit to screen (0)</p></TooltipContent>
-            </Tooltip>
-
-            {/* Layers toggle */}
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button variant={showLayers ? 'secondary' : 'ghost'} size="icon" className="h-7 w-7" onClick={() => setShowLayers(!showLayers)}>
-                  <Layers className="w-4 h-4" />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent side="bottom"><p>Lagen</p></TooltipContent>
-            </Tooltip>
-
-            {/* Hall switch */}
-            {hallOptions.length > 1 && (
-              <>
-                <Separator orientation="vertical" className="h-5 mx-1" />
-                <Select value={selectedHallId || ''} onValueChange={handleHallSwitch}>
-                  <SelectTrigger className="h-7 w-[160px] text-xs">
-                    <SelectValue placeholder="Hal selecteren..." />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {hallOptions.map(h => (
-                      <SelectItem key={h.id} value={h.id}>{h.name}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </>
-            )}
-          </div>
-
-          {/* Right */}
-          <div className="flex items-center gap-1">
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => document.documentElement.requestFullscreen?.()}>
-                  <Maximize className="w-4 h-4" />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent side="bottom"><p>Fullscreen</p></TooltipContent>
-            </Tooltip>
-          </div>
-        </div>
-
-        {/* ---- Canvas viewport ---- */}
-        <div
-          ref={containerRef}
-          className="flex-1 relative overflow-hidden bg-muted/30"
-          style={{ cursor: spacePressed ? 'grab' : 'default' }}
-          onMouseMove={onMouseMove}
-          {...pointerHandlers}
-        >
-          {basemapLoading && (
-            <div className="absolute inset-0 flex items-center justify-center z-20">
+          {/* Canvas */}
+          {basemapLoading ? (
+            <div className="flex-1 flex items-center justify-center">
               <Loader2 className="w-6 h-6 animate-spin text-primary" />
             </div>
-          )}
-
-          {basemapError && (
-            <div className="absolute inset-0 flex items-center justify-center z-20 text-destructive text-sm">
+          ) : basemapError ? (
+            <div className="flex-1 flex items-center justify-center text-destructive text-sm">
               {basemapError}
             </div>
+          ) : (
+            <EditorCanvas
+              camera={camera}
+              basemap={basemap}
+              layers={layers}
+              objects={editorObjects.objects}
+              selectedIds={selectedIds}
+              activeTool={activeTool}
+              showGrid={showGrid}
+              snapEnabled={snapEnabled}
+              gridSize={gridSize}
+              spacePressed={spacePressed}
+              onSelect={setSelectedIds}
+              onCreateRectStand={(x, y, w, h) => {
+                const stand = editorObjects.createRectStand(x, y, w, h);
+                setSelectedIds(new Set([stand.id]));
+                setActiveTool('select');
+              }}
+              onUpdateObject={editorObjects.updateObject}
+              onUpdateObjectSilent={editorObjects.updateObjectSilent}
+              onCursorMove={setCursorWorld}
+              containerRef={containerRef}
+              pointerHandlers={pointerHandlers}
+            />
           )}
 
-          {/* Transformed world container */}
-          <div
-            className="absolute origin-top-left"
-            style={{
-              transform: `translate(${camera.x}px, ${camera.y}px) scale(${camera.zoom})`,
-              willChange: 'transform',
-            }}
-          >
-            {basemap && (
-              <div style={{ width: basemap.bbox.maxX - basemap.bbox.minX, height: basemap.bbox.maxY - basemap.bbox.minY, position: 'relative' }}>
-                <BasemapRenderer
-                  svgUrl={basemap.svgUrl}
-                  layers={layers}
-                  opacity={100}
-                />
-              </div>
-            )}
-          </div>
-
-          {/* Layer panel overlay */}
-          {showLayers && layers.length > 0 && (
-            <LayerPanel layers={layers} onToggle={toggleLayer} />
-          )}
+          {/* Right Panel */}
+          <EditorRightPanel
+            layers={layers}
+            onToggleLayer={toggleLayer}
+            objects={editorObjects.objects}
+            selectedIds={selectedIds}
+            exhibitors={exhibitors}
+            units={basemap?.units || 'm'}
+            onUpdateObject={editorObjects.updateObject}
+            collapsed={rightCollapsed}
+            onToggleCollapse={() => setRightCollapsed(c => !c)}
+          />
         </div>
 
-        {/* ---- Status bar ---- */}
-        <StatusBar
-          zoomPercent={zoomPercent}
-          units={basemap?.units || 'm'}
+        {/* Status Bar */}
+        <EditorStatusBar
           cursorWorld={cursorWorld}
+          units={basemap?.units || 'm'}
+          zoomPercent={zoomPercent}
+          selectedCount={selectedIds.size}
+          objectCount={editorObjects.objects.length}
+          saveStatus={saveStatus}
         />
       </div>
     </TooltipProvider>

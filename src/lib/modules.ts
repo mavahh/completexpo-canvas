@@ -1,3 +1,4 @@
+import { FEATURES } from './featureFlags';
 import {
   Calendar,
   LayoutGrid,
@@ -20,6 +21,7 @@ export interface ModuleConfig {
   requiredPermission: string | null;
   requiredModuleVisibility?: string;
   comingSoon?: boolean;
+  hidden?: boolean;
 }
 
 export const MODULES: ModuleConfig[] = [
@@ -88,6 +90,7 @@ export const MODULES: ModuleConfig[] = [
     requiresEvent: true,
     buildHref: (eventId) => `/events/${eventId}/pos`,
     requiredPermission: 'POS_VIEW',
+    hidden: !FEATURES.POS,
   },
   {
     id: 'crm',

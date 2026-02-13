@@ -17,6 +17,8 @@ export default function Home() {
     if (loading) return [];
     
     return MODULES.filter((module) => {
+      // Hidden modules (feature-flagged off)
+      if (module.hidden) return false;
       // Coming soon modules are always visible
       if (module.comingSoon) return true;
       
