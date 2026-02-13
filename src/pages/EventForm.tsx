@@ -97,6 +97,14 @@ export default function EventForm() {
 
         if (eventError || !event) throw eventError;
 
+        // Update hall_id if selected
+        if (form.hall_id) {
+          await supabase
+            .from('events')
+            .update({ hall_id: form.hall_id })
+            .eq('id', event.id);
+        }
+
         toast({
           title: 'Aangemaakt',
           description: 'Evenement is aangemaakt',
