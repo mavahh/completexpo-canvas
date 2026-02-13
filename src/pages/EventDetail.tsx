@@ -19,7 +19,8 @@ import {
   MapPin,
   LayoutGrid,
   ClipboardList,
-  Receipt
+  Receipt,
+  ExternalLink
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { nl } from 'date-fns/locale';
@@ -30,6 +31,7 @@ interface Event {
   start_date: string | null;
   end_date: string | null;
   location: string | null;
+  hall_id: string | null;
 }
 
 interface Stats {
@@ -141,11 +143,23 @@ export default function EventDetail() {
               )}
             </div>
           </div>
-          <Link to={`/events/${id}/edit`}>
-            <Button variant="outline" size="sm">
-              Bewerken
-            </Button>
-          </Link>
+          <div className="flex items-center gap-2">
+            {event.hall_id && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => window.open(`/floorplan/event/${id}/hall/${event.hall_id}`, '_blank')}
+              >
+                <ExternalLink className="w-3.5 h-3.5 mr-1.5" />
+                Floorplan Editor
+              </Button>
+            )}
+            <Link to={`/events/${id}/edit`}>
+              <Button variant="outline" size="sm">
+                Bewerken
+              </Button>
+            </Link>
+          </div>
         </div>
 
         {/* Stats row */}
