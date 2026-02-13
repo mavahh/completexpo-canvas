@@ -25,6 +25,8 @@ interface FloorplanCanvasProps {
   activeTool?: EditorTool;
   drawRect?: { x: number; y: number; width: number; height: number } | null;
   performanceMode?: boolean;
+  // Override background URL (e.g. from hall)
+  effectiveBackgroundUrl?: string | null;
 }
 
 export const FloorplanCanvasEnhanced = forwardRef<HTMLDivElement, FloorplanCanvasProps>(
@@ -48,9 +50,11 @@ export const FloorplanCanvasEnhanced = forwardRef<HTMLDivElement, FloorplanCanva
     activeTool = 'select',
     drawRect,
     performanceMode = false,
+    effectiveBackgroundUrl,
   }, ref) => {
     const filteredStands = stands.filter(s => statusFilters[s.status]);
     const isDrawMode = activeTool === 'draw';
+    const bgUrl = effectiveBackgroundUrl ?? floorplan?.background_url;
 
     return (
       <div
@@ -72,12 +76,12 @@ export const FloorplanCanvasEnhanced = forwardRef<HTMLDivElement, FloorplanCanva
           onMouseDown={(e) => onMouseDown(e)}
         >
           {/* Background image - hide in performance mode */}
-          {floorplan?.background_url && !performanceMode && (
+          {bgUrl && !performanceMode && (
             <img
-              src={floorplan.background_url}
+              src={bgUrl}
               alt="Achtergrond"
               className="absolute inset-0 w-full h-full object-contain pointer-events-none"
-              style={{ opacity: (floorplan.background_opacity || 100) / 100 }}
+              style={{ opacity: (floorplan?.background_opacity || 100) / 100 }}
             />
           )}
 

@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Loader2, PanelLeft, PanelRight, Pencil } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
 import { useEventRole } from '@/hooks/useEventRole';
 import { useDarkMode } from '@/hooks/useDarkMode';
 import { useFullscreen } from '@/hooks/useFullscreen';
@@ -39,6 +40,30 @@ export default function FloorplanEditor() {
   const [mobileLeftOpen, setMobileLeftOpen] = useState(false);
   const [mobileRightOpen, setMobileRightOpen] = useState(false);
   const isMobile = useIsMobile();
+  const [hallBackgroundUrl, setHallBackgroundUrl] = useState<string | null>(null);
+
+  // Load hall background for event
+  useEffect(() => {
+    if (!eventId) return;
+    const loadHallBg = async () => {
+      const { data: eventData } = await supabase
+        .from('events')
+        .select('hall_id')
+        .eq('id', eventId)
+        .single();
+      if (eventData?.hall_id) {
+        const { data: hallData } = await supabase
+          .from('halls')
+          .select('background_url')
+          .eq('id', eventData.hall_id)
+          .single();
+        if (hallData?.background_url) {
+          setHallBackgroundUrl(hallData.background_url);
+        }
+      }
+    };
+    loadHallBg();
+  }, [eventId]);
 
   // Integrated floorplan editor hook with all features
   const editor = useFloorplanEditor({ 
@@ -47,6 +72,8 @@ export default function FloorplanEditor() {
     canvasRef, 
     canvasContainerRef 
   });
+
+  const effectiveBackgroundUrl = editor.floorplan?.background_url || hallBackgroundUrl;
 
   // Export hook
   const { handleExport } = useFloorplanExport({
@@ -299,6 +326,7 @@ export default function FloorplanEditor() {
             activeTool={editor.activeTool}
             drawRect={editor.drawRect}
             performanceMode={editor.performanceMode}
+            effectiveBackgroundUrl={effectiveBackgroundUrl}
           />
 
           {/* Right sidebar - hidden on mobile, shown on tablet+ */}

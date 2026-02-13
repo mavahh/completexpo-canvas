@@ -71,9 +71,13 @@ export default function ProfessionalEditor() {
     deleteStand: floorplanData.deleteStand,
   });
 
-  // Background bounds (SVG fit-to-view)
+  // Compute effective background: floorplan bg > hall bg > null
+  const selectedHall = eventHalls.find(h => h.id === selectedHallId);
+  const effectiveBackgroundUrl = floorplanData.floorplan?.background_url || selectedHall?.background_url || null;
+
+  // Background bounds (SVG fit-to-view) - uses effective background
   const bgBounds = useBackgroundBounds({
-    backgroundUrl: floorplanData.floorplan?.background_url,
+    backgroundUrl: effectiveBackgroundUrl,
     containerRef: canvasContainerRef,
     setZoom: canvasInteraction.setZoom,
     setPan: canvasInteraction.setPan,
@@ -348,7 +352,7 @@ export default function ProfessionalEditor() {
             <MeasurementToolButton active={measurement.active} onToggle={measurement.toggle} />
 
             {/* Background opacity slider */}
-            {floorplanData.floorplan?.background_url && (
+            {effectiveBackgroundUrl && (
               <>
                 <Separator orientation="vertical" className="h-5 mx-1" />
                 <div className="flex items-center gap-1.5">
@@ -460,6 +464,7 @@ export default function ProfessionalEditor() {
             activeTool={drawMode.activeTool}
             drawRect={drawMode.drawRect}
             performanceMode={false}
+            effectiveBackgroundUrl={effectiveBackgroundUrl}
           />
 
           {/* Right sidebar */}
@@ -496,7 +501,7 @@ export default function ProfessionalEditor() {
           {/* Debug panel - superadmin only */}
           {isSuperAdmin && (
             <BackgroundDebugPanel
-              backgroundUrl={floorplanData.floorplan?.background_url}
+              backgroundUrl={effectiveBackgroundUrl}
               svgViewBox={bgBounds.svgViewBox}
               computedBounds={bgBounds.bounds}
               viewportSize={bgBounds.getViewportSize()}

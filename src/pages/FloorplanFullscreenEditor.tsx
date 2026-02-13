@@ -37,7 +37,7 @@ export default function FloorplanFullscreenEditor() {
   const [rightPanelTab, setRightPanelTab] = useState('properties');
   const [showRightPanel, setShowRightPanel] = useState(true);
   const [isSuperAdmin, setIsSuperAdmin] = useState(false);
-
+  const [hallBackgroundUrl, setHallBackgroundUrl] = useState<string | null>(null);
   // Floorplan data hook
   const floorplanData = useFloorplanData({ eventId, canEdit });
   
@@ -54,9 +54,12 @@ export default function FloorplanFullscreenEditor() {
     deleteStand: floorplanData.deleteStand,
   });
 
+  // Compute effective background: floorplan bg > hall bg > null
+  const effectiveBackgroundUrl = floorplanData.floorplan?.background_url || hallBackgroundUrl;
+
   // Background bounds (SVG fit-to-view)
   const bgBounds = useBackgroundBounds({
-    backgroundUrl: floorplanData.floorplan?.background_url,
+    backgroundUrl: effectiveBackgroundUrl,
     containerRef: canvasContainerRef,
     setZoom: canvasInteraction.setZoom,
     setPan: canvasInteraction.setPan,
@@ -73,7 +76,7 @@ export default function FloorplanFullscreenEditor() {
     setShowGrid: canvasInteraction.setShowGrid,
   });
 
-  // Check superadmin
+  // Check superadmin + load hall background
   useEffect(() => {
     if (!user) return;
     supabase
@@ -83,6 +86,29 @@ export default function FloorplanFullscreenEditor() {
       .maybeSingle()
       .then(({ data }) => setIsSuperAdmin(!!data));
   }, [user]);
+
+  // Load hall background for event
+  useEffect(() => {
+    if (!eventId) return;
+    const loadHallBg = async () => {
+      const { data: eventData } = await supabase
+        .from('events')
+        .select('hall_id')
+        .eq('id', eventId)
+        .single();
+      if (eventData?.hall_id) {
+        const { data: hallData } = await supabase
+          .from('halls')
+          .select('background_url')
+          .eq('id', eventData.hall_id)
+          .single();
+        if (hallData?.background_url) {
+          setHallBackgroundUrl(hallData.background_url);
+        }
+      }
+    };
+    loadHallBg();
+  }, [eventId]);
 
   // Initial data fetch
   useEffect(() => {
@@ -195,8 +221,9 @@ export default function FloorplanFullscreenEditor() {
           onMouseDown={canvasInteraction.handleMouseDown}
           onMouseMove={canvasInteraction.handleMouseMove}
           onMouseUp={canvasInteraction.handleMouseUp}
-          onResizeStart={canvasInteraction.handleResizeStart}
-        />
+           onResizeStart={canvasInteraction.handleResizeStart}
+           effectiveBackgroundUrl={effectiveBackgroundUrl}
+         />
 
         {/* Collapsible right sidebar */}
         {showRightPanel && (
@@ -231,7 +258,7 @@ export default function FloorplanFullscreenEditor() {
         {/* Debug panel - superadmin only */}
         {isSuperAdmin && (
           <BackgroundDebugPanel
-            backgroundUrl={floorplanData.floorplan?.background_url}
+            backgroundUrl={effectiveBackgroundUrl}
             svgViewBox={bgBounds.svgViewBox}
             computedBounds={bgBounds.bounds}
             viewportSize={bgBounds.getViewportSize()}
