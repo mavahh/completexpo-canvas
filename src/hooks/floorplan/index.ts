@@ -12,3 +12,4 @@ export * from './alignmentUtils';
 export * from './techSheetExport';
 export * from './printLabels';
 export * from './useFloorplanEditor';
+export * from './useBackgroundBounds';

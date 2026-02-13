@@ -132,6 +132,7 @@ const App = () => (
 
             {/* Professional CAD editor - outside dashboard layout */}
             <Route path="/editor/:id" element={<ProtectedRoute><ProfessionalEditor /></ProtectedRoute>} />
+            <Route path="/editor/:id/:eventId" element={<ProtectedRoute><ProfessionalEditor /></ProtectedRoute>} />
 
             {/* Catch-all */}
             <Route path="*" element={<NotFound />} />
