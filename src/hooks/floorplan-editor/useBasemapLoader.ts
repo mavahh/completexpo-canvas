@@ -1,5 +1,5 @@
 /**
- * useBasemapLoader – loads a HallBasemap from the backend or creates a mock.
+ * useBasemapLoader – loads a HallBasemap with plattegrond + technisch SVG URLs.
  */
 
 import { useState, useEffect, useCallback } from 'react';
@@ -16,7 +16,6 @@ export function useBasemapLoader(hallId: string | null) {
     setError(null);
 
     try {
-      // Load hall data from DB
       const { data: hall, error: hallError } = await supabase
         .from('halls')
         .select('id, name, width_meters, height_meters, scale_ratio, background_url, background_type')
@@ -29,13 +28,11 @@ export function useBasemapLoader(hallId: string | null) {
         return;
       }
 
-      // Build basemap from hall data
       const widthM = Number(hall.width_meters) || 100;
       const heightM = Number(hall.height_meters) || 60;
-
       const bbox: BBox = { minX: 0, minY: 0, maxX: widthM, maxY: heightM };
 
-      // Default layers
+      // Default basemap sub-layers
       const layers: BasemapLayer[] = [
         { id: 'walls', name: 'Muren', visible: true, kind: 'walls' },
         { id: 'text', name: 'Labels', visible: true, kind: 'text' },
@@ -43,12 +40,29 @@ export function useBasemapLoader(hallId: string | null) {
         { id: 'other', name: 'Overig', visible: true, kind: 'other' },
       ];
 
+      // Check for plattegrond + technisch SVGs in storage
+      const basePath = `${id}`;
+      const { data: plattegrondUrl } = supabase.storage.from('hall-backgrounds').getPublicUrl(`${basePath}/plattegrond.svg`);
+      const { data: technischUrl } = supabase.storage.from('hall-backgrounds').getPublicUrl(`${basePath}/technisch.svg`);
+
+      // Verify files exist by checking listing
+      const { data: files } = await supabase.storage.from('hall-backgrounds').list(basePath);
+      const fileNames = (files || []).map(f => f.name);
+      const hasPlattegrond = fileNames.includes('plattegrond.svg');
+      const hasTechnisch = fileNames.includes('technisch.svg');
+
+      // Fallback: use legacy background_url as plattegrond
+      const plattegrondSvgUrl = hasPlattegrond ? plattegrondUrl.publicUrl : (hall.background_url || '');
+      const technischSvgUrl = hasTechnisch ? technischUrl.publicUrl : '';
+
       const result: HallBasemap = {
         hallId: hall.id,
         units: 'm',
         bbox,
         layers,
-        svgUrl: hall.background_url || '',
+        svgUrl: plattegrondSvgUrl, // backward compat
+        plattegrondSvgUrl,
+        technischSvgUrl,
         updatedAt: new Date().toISOString(),
       };
 

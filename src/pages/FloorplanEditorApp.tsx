@@ -1,8 +1,8 @@
 /**
- * FloorplanEditorApp – integrated fullscreen editor for a specific event + hall.
- * Route: /floorplan/event/:eventId/hall/:hallId
- *
- * Single EditorShell: topbar + left panel + canvas + right panel + status bar.
+ * FloorplanEditorApp – integrated fullscreen editor with 3-layer system:
+ *   1. Plattegrond (read-only SVG)
+ *   2. Technisch plan (read-only SVG)
+ *   3. Standenplan (editable JSON objects)
  */
 
 import { useEffect, useRef, useState, useCallback } from 'react';
@@ -21,12 +21,21 @@ import { EditorRightPanel } from '@/components/floorplan-editor/EditorRightPanel
 import { EditorStatusBar } from '@/components/floorplan-editor/EditorStatusBar';
 import { Button } from '@/components/ui/button';
 import { TooltipProvider } from '@/components/ui/tooltip';
-import type { BasemapLayer, WorldPoint } from '@/types/floorplan-editor';
+import type { EditorLayer, WorldPoint } from '@/types/floorplan-editor';
 
 const DEV_MODE = import.meta.env.VITE_DEV_MODE === 'true';
 
 interface HallOption { id: string; name: string; }
 interface Exhibitor { id: string; name: string; }
+
+// Default 3-layer setup
+function createDefaultEditorLayers(): EditorLayer[] {
+  return [
+    { id: 'plattegrond', name: 'Plattegrond', kind: 'plattegrond', visible: true, opacity: 100, locked: true },
+    { id: 'technisch', name: 'Technisch plan', kind: 'technisch', visible: true, opacity: 60, locked: true },
+    { id: 'standenplan', name: 'Standenplan', kind: 'standenplan', visible: true, opacity: 100, locked: false },
+  ];
+}
 
 export default function FloorplanEditorApp() {
   const { eventId, hallId } = useParams();
@@ -42,7 +51,7 @@ export default function FloorplanEditorApp() {
   const [activeTool, setActiveTool] = useState<EditorToolType>('select');
   const [showGrid, setShowGrid] = useState(true);
   const [snapEnabled, setSnapEnabled] = useState(true);
-  const [layers, setLayers] = useState<BasemapLayer[]>([]);
+  const [editorLayers, setEditorLayers] = useState<EditorLayer[]>(createDefaultEditorLayers);
   const [cursorWorld, setCursorWorld] = useState<WorldPoint | null>(null);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [leftCollapsed, setLeftCollapsed] = useState(false);
@@ -70,13 +79,10 @@ export default function FloorplanEditorApp() {
     onSaved: editorObjects.markSaved,
   });
 
-  // Grid size from basemap units
-  const gridSize = basemap?.units === 'mm' ? 1000 : 1; // 1m grid
+  const gridSize = basemap?.units === 'mm' ? 1000 : 1;
 
-  // Sync layers from basemap
-  useEffect(() => {
-    if (basemap?.layers) setLayers(basemap.layers);
-  }, [basemap]);
+  // Standenplan lock state
+  const standenplanLocked = editorLayers.find(l => l.kind === 'standenplan')?.locked ?? false;
 
   // Fit when basemap changes
   useEffect(() => {
@@ -108,7 +114,6 @@ export default function FloorplanEditorApp() {
         }
       }
 
-      // Load exhibitors for this event
       const { data: exData } = await supabase
         .from('exhibitors').select('id, name')
         .eq('event_id', eventId).order('name');
@@ -134,9 +139,17 @@ export default function FloorplanEditorApp() {
     })();
   }, [eventId, selectedHallId]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // ---- Layer toggle ----
-  const toggleLayer = useCallback((layerId: string) => {
-    setLayers(prev => prev.map(l => l.id === layerId ? { ...l, visible: !l.visible } : l));
+  // ---- Layer controls ----
+  const toggleLayerVisibility = useCallback((id: string) => {
+    setEditorLayers(prev => prev.map(l => l.id === id ? { ...l, visible: !l.visible } : l));
+  }, []);
+
+  const setLayerOpacity = useCallback((id: string, opacity: number) => {
+    setEditorLayers(prev => prev.map(l => l.id === id ? { ...l, opacity } : l));
+  }, []);
+
+  const toggleLayerLock = useCallback((id: string) => {
+    setEditorLayers(prev => prev.map(l => l.id === id ? { ...l, locked: !l.locked } : l));
   }, []);
 
   // ---- Hall switch ----
@@ -151,26 +164,22 @@ export default function FloorplanEditorApp() {
       const t = e.target as HTMLElement;
       if (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.tagName === 'SELECT') return;
 
-      // Tool shortcuts
       if (e.key === 'v' || e.key === 'V') { setActiveTool('select'); return; }
       if (e.key === 'r' || e.key === 'R') { setActiveTool('draw-rect'); return; }
       if (e.key === 'p' || e.key === 'P') { setActiveTool('draw-poly'); return; }
       if (e.key === 't' || e.key === 'T') { setActiveTool('text'); return; }
       if (e.key === 'm' || e.key === 'M') { setActiveTool('measure'); return; }
 
-      // Undo/redo
       if ((e.ctrlKey || e.metaKey) && e.key === 'z' && !e.shiftKey) { e.preventDefault(); editorObjects.undo(); return; }
       if ((e.ctrlKey || e.metaKey) && (e.key === 'Z' || (e.key === 'z' && e.shiftKey))) { e.preventDefault(); editorObjects.redo(); return; }
 
-      // Delete
-      if ((e.key === 'Delete' || e.key === 'Backspace') && selectedIds.size > 0) {
+      if ((e.key === 'Delete' || e.key === 'Backspace') && selectedIds.size > 0 && !standenplanLocked) {
         e.preventDefault();
         editorObjects.deleteObjects(selectedIds);
         setSelectedIds(new Set());
         return;
       }
 
-      // Escape
       if (e.key === 'Escape') {
         setSelectedIds(new Set());
         setActiveTool('select');
@@ -179,7 +188,7 @@ export default function FloorplanEditorApp() {
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [selectedIds, editorObjects]);
+  }, [selectedIds, editorObjects, standenplanLocked]);
 
   // ---- Auth check ----
   if (!DEV_MODE && authLoading) {
@@ -197,7 +206,6 @@ export default function FloorplanEditorApp() {
   return (
     <TooltipProvider>
       <div className="fixed inset-0 z-50 bg-background flex flex-col select-none">
-        {/* Topbar */}
         <EditorTopbar
           eventId={eventId || ''}
           eventName={eventName}
@@ -222,9 +230,7 @@ export default function FloorplanEditorApp() {
           onSaveNow={saveNow}
         />
 
-        {/* Main area: left panel + canvas + right panel */}
         <div className="flex-1 flex min-h-0">
-          {/* Left Panel */}
           <EditorLeftPanel
             objects={editorObjects.objects}
             exhibitors={exhibitors}
@@ -234,7 +240,6 @@ export default function FloorplanEditorApp() {
             onToggleCollapse={() => setLeftCollapsed(c => !c)}
           />
 
-          {/* Canvas */}
           {basemapLoading ? (
             <div className="flex-1 flex items-center justify-center">
               <Loader2 className="w-6 h-6 animate-spin text-primary" />
@@ -246,8 +251,13 @@ export default function FloorplanEditorApp() {
           ) : (
             <EditorCanvas
               camera={camera}
-              basemap={basemap}
-              layers={layers}
+              basemap={basemap ? {
+                bbox: basemap.bbox,
+                plattegrondSvgUrl: basemap.plattegrondSvgUrl,
+                technischSvgUrl: basemap.technischSvgUrl,
+                units: basemap.units,
+              } : null}
+              editorLayers={editorLayers}
               objects={editorObjects.objects}
               selectedIds={selectedIds}
               activeTool={activeTool}
@@ -255,6 +265,7 @@ export default function FloorplanEditorApp() {
               snapEnabled={snapEnabled}
               gridSize={gridSize}
               spacePressed={spacePressed}
+              standenplanLocked={standenplanLocked}
               onSelect={setSelectedIds}
               onCreateRectStand={(x, y, w, h) => {
                 const stand = editorObjects.createRectStand(x, y, w, h);
@@ -269,10 +280,11 @@ export default function FloorplanEditorApp() {
             />
           )}
 
-          {/* Right Panel */}
           <EditorRightPanel
-            layers={layers}
-            onToggleLayer={toggleLayer}
+            editorLayers={editorLayers}
+            onToggleLayerVisibility={toggleLayerVisibility}
+            onSetLayerOpacity={setLayerOpacity}
+            onToggleLayerLock={toggleLayerLock}
             objects={editorObjects.objects}
             selectedIds={selectedIds}
             exhibitors={exhibitors}
@@ -283,7 +295,6 @@ export default function FloorplanEditorApp() {
           />
         </div>
 
-        {/* Status Bar */}
         <EditorStatusBar
           cursorWorld={cursorWorld}
           units={basemap?.units || 'm'}

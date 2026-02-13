@@ -1,19 +1,21 @@
 /**
- * EditorCanvas – main SVG canvas with basemap, grid, and interactive objects.
- * Handles select, draw-rect, move, resize interactions.
+ * EditorCanvas – main SVG canvas with 3-layer system:
+ *   1. Plattegrond (read-only SVG)
+ *   2. Technisch plan (read-only SVG)
+ *   3. Standenplan (editable objects)
+ * All share the same camera transform.
  */
 
-import { useRef, useCallback, useState, useEffect } from 'react';
+import { useRef, useCallback, useState } from 'react';
 import { BasemapRenderer } from './BasemapRenderer';
-import { screenToWorld, worldToScreen } from '@/lib/camera';
-import type { Camera, BasemapLayer, BBox, LayoutObject, LayoutStand, WorldPoint } from '@/types/floorplan-editor';
+import { screenToWorld } from '@/lib/camera';
+import type { Camera, BBox, LayoutObject, LayoutStand, WorldPoint, EditorLayer } from '@/types/floorplan-editor';
 import type { EditorToolType } from './EditorTopbar';
-import { cn } from '@/lib/utils';
 
 interface EditorCanvasProps {
   camera: Camera;
-  basemap: { bbox: BBox; svgUrl: string; units: string } | null;
-  layers: BasemapLayer[];
+  basemap: { bbox: BBox; plattegrondSvgUrl: string; technischSvgUrl: string; units: string } | null;
+  editorLayers: EditorLayer[];
   objects: LayoutObject[];
   selectedIds: Set<string>;
   activeTool: EditorToolType;
@@ -21,6 +23,7 @@ interface EditorCanvasProps {
   snapEnabled: boolean;
   gridSize: number;
   spacePressed: boolean;
+  standenplanLocked: boolean;
   onSelect: (ids: Set<string>) => void;
   onCreateRectStand: (x: number, y: number, w: number, h: number) => void;
   onUpdateObject: (id: string, updates: Partial<LayoutObject>) => void;
@@ -34,7 +37,6 @@ interface EditorCanvasProps {
   };
 }
 
-// Stand status colors
 const STATUS_COLORS: Record<string, string> = {
   AVAILABLE: 'hsl(142, 71%, 45%)',
   RESERVED: 'hsl(38, 92%, 50%)',
@@ -54,14 +56,13 @@ function getStandBounds(stand: LayoutStand) {
 }
 
 export function EditorCanvas({
-  camera, basemap, layers, objects, selectedIds, activeTool,
-  showGrid, snapEnabled, gridSize, spacePressed,
+  camera, basemap, editorLayers, objects, selectedIds, activeTool,
+  showGrid, snapEnabled, gridSize, spacePressed, standenplanLocked,
   onSelect, onCreateRectStand, onUpdateObject, onUpdateObjectSilent, onCursorMove,
   containerRef, pointerHandlers,
 }: EditorCanvasProps) {
   const [drawRect, setDrawRect] = useState<{ sx: number; sy: number; ex: number; ey: number } | null>(null);
   const [dragging, setDragging] = useState<{ id: string; startWorld: WorldPoint; origPolygon: WorldPoint[] } | null>(null);
-  const [resizing, setResizing] = useState<{ id: string; handle: string; startWorld: WorldPoint; origBounds: { x: number; y: number; w: number; h: number } } | null>(null);
 
   const snap = useCallback((v: number) => {
     if (!snapEnabled) return v;
@@ -74,7 +75,12 @@ export function EditorCanvas({
     return screenToWorld({ x: e.clientX - rect.left, y: e.clientY - rect.top }, camera);
   }, [camera, containerRef]);
 
-  // Canvas pointer down
+  // Get layer state helpers
+  const getLayer = (kind: string) => editorLayers.find(l => l.kind === kind);
+  const plattegrondLayer = getLayer('plattegrond');
+  const technischLayer = getLayer('technisch');
+  const standenplanLayer = getLayer('standenplan');
+
   const handlePointerDown = useCallback((e: React.PointerEvent) => {
     if (spacePressed || e.button === 1) {
       pointerHandlers.onPointerDown(e);
@@ -83,7 +89,7 @@ export function EditorCanvas({
 
     const world = getWorld(e);
 
-    if (activeTool === 'draw-rect') {
+    if (activeTool === 'draw-rect' && !standenplanLocked) {
       e.preventDefault();
       const sx = snap(world.x);
       const sy = snap(world.y);
@@ -92,32 +98,31 @@ export function EditorCanvas({
     }
 
     if (activeTool === 'select') {
-      // Check if clicking on an object
-      const clicked = findObjectAt(world, objects);
-      if (clicked) {
-        e.stopPropagation();
-        if (e.shiftKey) {
-          const next = new Set(selectedIds);
-          next.has(clicked.id) ? next.delete(clicked.id) : next.add(clicked.id);
-          onSelect(next);
-        } else {
-          onSelect(new Set([clicked.id]));
-          // Start drag
-          if (clicked.type === 'stand') {
-            setDragging({
-              id: clicked.id,
-              startWorld: world,
-              origPolygon: [...clicked.polygon],
-            });
+      if (!standenplanLocked) {
+        const clicked = findObjectAt(world, objects);
+        if (clicked) {
+          e.stopPropagation();
+          if (e.shiftKey) {
+            const next = new Set(selectedIds);
+            next.has(clicked.id) ? next.delete(clicked.id) : next.add(clicked.id);
+            onSelect(next);
+          } else {
+            onSelect(new Set([clicked.id]));
+            if (clicked.type === 'stand') {
+              setDragging({
+                id: clicked.id,
+                startWorld: world,
+                origPolygon: [...clicked.polygon],
+              });
+            }
           }
+          return;
         }
-        return;
       }
-      // Clicked empty space
       if (!e.shiftKey) onSelect(new Set());
       pointerHandlers.onPointerDown(e);
     }
-  }, [activeTool, spacePressed, objects, selectedIds, snap, getWorld, onSelect, pointerHandlers]);
+  }, [activeTool, spacePressed, objects, selectedIds, snap, getWorld, onSelect, pointerHandlers, standenplanLocked]);
 
   const handlePointerMove = useCallback((e: React.PointerEvent) => {
     const world = getWorld(e);
@@ -136,13 +141,8 @@ export function EditorCanvas({
       return;
     }
 
-    if (resizing) {
-      // Handle resize
-      return;
-    }
-
     pointerHandlers.onPointerMove(e);
-  }, [drawRect, dragging, resizing, snap, getWorld, onCursorMove, onUpdateObjectSilent, pointerHandlers]);
+  }, [drawRect, dragging, snap, getWorld, onCursorMove, onUpdateObjectSilent, pointerHandlers]);
 
   const handlePointerUp = useCallback((e: React.PointerEvent) => {
     if (drawRect) {
@@ -158,7 +158,6 @@ export function EditorCanvas({
     }
 
     if (dragging) {
-      // Commit drag with undo
       const obj = objects.find(o => o.id === dragging.id) as LayoutStand | undefined;
       if (obj) {
         onUpdateObject(dragging.id, { polygon: obj.polygon } as Partial<LayoutStand>);
@@ -170,20 +169,11 @@ export function EditorCanvas({
     pointerHandlers.onPointerUp(e);
   }, [drawRect, dragging, gridSize, objects, onCreateRectStand, onUpdateObject, pointerHandlers]);
 
-  // Resize handle start
-  const handleResizeStart = useCallback((e: React.PointerEvent, objectId: string, handle: string) => {
-    e.stopPropagation();
-    e.preventDefault();
-    const obj = objects.find(o => o.id === objectId);
-    if (!obj || obj.type !== 'stand') return;
-    const bounds = getStandBounds(obj);
-    setResizing({ id: objectId, handle, startWorld: getWorld(e), origBounds: bounds });
-  }, [objects, getWorld]);
-
   const bboxW = basemap ? basemap.bbox.maxX - basemap.bbox.minX : 1000;
   const bboxH = basemap ? basemap.bbox.maxY - basemap.bbox.minY : 600;
 
-  const cursorStyle = activeTool === 'draw-rect' ? 'crosshair'
+  const cursorStyle = standenplanLocked ? 'not-allowed'
+    : activeTool === 'draw-rect' ? 'crosshair'
     : activeTool === 'measure' ? 'crosshair'
     : spacePressed ? 'grab'
     : dragging ? 'grabbing'
@@ -193,16 +183,12 @@ export function EditorCanvas({
     <div
       ref={containerRef}
       className="flex-1 relative overflow-hidden"
-      style={{ cursor: cursorStyle, background: 'hsl(var(--editor-canvas))' }}
+      style={{ cursor: cursorStyle, background: 'hsl(var(--editor-canvas, 220 14% 10%))' }}
       onPointerDown={handlePointerDown}
       onPointerMove={handlePointerMove}
       onPointerUp={handlePointerUp}
-      onMouseMove={(e) => {
-        const world = getWorld(e);
-        onCursorMove(world);
-      }}
     >
-      {/* Transformed world container */}
+      {/* Single transformed world container – all layers share this */}
       <div
         className="absolute origin-top-left"
         style={{
@@ -227,116 +213,125 @@ export function EditorCanvas({
           </svg>
         )}
 
-        {/* Basemap */}
-        {basemap && (
-          <div style={{ width: bboxW, height: bboxH, position: 'relative' }}>
-            <BasemapRenderer svgUrl={basemap.svgUrl} layers={layers} opacity={100} />
+        {/* Layer 1: Plattegrond (read-only SVG) */}
+        {basemap && plattegrondLayer?.visible && basemap.plattegrondSvgUrl && (
+          <div
+            className="absolute top-0 left-0 pointer-events-none"
+            style={{ width: bboxW, height: bboxH, opacity: (plattegrondLayer.opacity ?? 100) / 100 }}
+          >
+            <BasemapRenderer svgUrl={basemap.plattegrondSvgUrl} layers={[]} opacity={100} />
           </div>
         )}
 
-        {/* Objects layer */}
-        <svg
-          className="absolute top-0 left-0"
-          width={bboxW}
-          height={bboxH}
-          style={{ pointerEvents: 'none' }}
-        >
-          {objects.map(obj => {
-            if (obj.type !== 'stand') return null;
-            const bounds = getStandBounds(obj);
-            const isSelected = selectedIds.has(obj.id);
-            const color = obj.color || STATUS_COLORS[obj.status || 'AVAILABLE'] || STATUS_COLORS.AVAILABLE;
+        {/* Layer 2: Technisch plan (read-only SVG) */}
+        {basemap && technischLayer?.visible && basemap.technischSvgUrl && (
+          <div
+            className="absolute top-0 left-0 pointer-events-none"
+            style={{ width: bboxW, height: bboxH, opacity: (technischLayer.opacity ?? 100) / 100 }}
+          >
+            <BasemapRenderer svgUrl={basemap.technischSvgUrl} layers={[]} opacity={100} />
+          </div>
+        )}
 
-            return (
-              <g key={obj.id} style={{ pointerEvents: 'all' }}>
-                {/* Stand rect */}
-                <rect
-                  x={bounds.x}
-                  y={bounds.y}
-                  width={bounds.w}
-                  height={bounds.h}
-                  fill={color}
-                  fillOpacity={0.6}
-                  stroke={isSelected ? 'hsl(var(--primary))' : 'rgba(255,255,255,0.4)'}
-                  strokeWidth={isSelected ? 2 / camera.zoom : 1 / camera.zoom}
-                  rx={1 / camera.zoom}
-                  className="cursor-move"
-                />
-                {/* Label */}
-                {obj.label && bounds.w > 5 && (
-                  <text
-                    x={bounds.x + bounds.w / 2}
-                    y={bounds.y + bounds.h / 2}
-                    textAnchor="middle"
-                    dominantBaseline="central"
-                    fill="white"
-                    fontSize={Math.min(bounds.w / 4, bounds.h / 3, 14 / camera.zoom)}
-                    fontWeight="600"
-                    style={{ pointerEvents: 'none', userSelect: 'none' }}
-                  >
-                    {obj.label}
-                  </text>
-                )}
-                {/* Selection handles */}
-                {isSelected && (
-                  <>
-                    <rect
-                      x={bounds.x - 3 / camera.zoom}
-                      y={bounds.y - 3 / camera.zoom}
-                      width={bounds.w + 6 / camera.zoom}
-                      height={bounds.h + 6 / camera.zoom}
-                      fill="none"
-                      stroke="hsl(var(--primary))"
-                      strokeWidth={1.5 / camera.zoom}
-                      strokeDasharray={`${4 / camera.zoom}`}
-                      style={{ pointerEvents: 'none' }}
-                    />
-                    {/* Corner handles */}
-                    {[
-                      { cx: bounds.x, cy: bounds.y },
-                      { cx: bounds.x + bounds.w, cy: bounds.y },
-                      { cx: bounds.x + bounds.w, cy: bounds.y + bounds.h },
-                      { cx: bounds.x, cy: bounds.y + bounds.h },
-                    ].map((h, i) => (
+        {/* Layer 3: Standenplan (editable objects) */}
+        {standenplanLayer?.visible && (
+          <svg
+            className="absolute top-0 left-0"
+            width={bboxW}
+            height={bboxH}
+            style={{ pointerEvents: 'none', opacity: (standenplanLayer.opacity ?? 100) / 100 }}
+          >
+            {objects.map(obj => {
+              if (obj.type !== 'stand') return null;
+              const bounds = getStandBounds(obj);
+              const isSelected = selectedIds.has(obj.id);
+              const color = obj.color || STATUS_COLORS[obj.status || 'AVAILABLE'] || STATUS_COLORS.AVAILABLE;
+
+              return (
+                <g key={obj.id} style={{ pointerEvents: standenplanLocked ? 'none' : 'all' }}>
+                  <rect
+                    x={bounds.x}
+                    y={bounds.y}
+                    width={bounds.w}
+                    height={bounds.h}
+                    fill={color}
+                    fillOpacity={0.6}
+                    stroke={isSelected ? 'hsl(var(--primary))' : 'rgba(255,255,255,0.4)'}
+                    strokeWidth={isSelected ? 2 / camera.zoom : 1 / camera.zoom}
+                    rx={1 / camera.zoom}
+                    className={standenplanLocked ? '' : 'cursor-move'}
+                  />
+                  {obj.label && bounds.w > 5 && (
+                    <text
+                      x={bounds.x + bounds.w / 2}
+                      y={bounds.y + bounds.h / 2}
+                      textAnchor="middle"
+                      dominantBaseline="central"
+                      fill="white"
+                      fontSize={Math.min(bounds.w / 4, bounds.h / 3, 14 / camera.zoom)}
+                      fontWeight="600"
+                      style={{ pointerEvents: 'none', userSelect: 'none' }}
+                    >
+                      {obj.label}
+                    </text>
+                  )}
+                  {isSelected && !standenplanLocked && (
+                    <>
                       <rect
-                        key={i}
-                        x={h.cx - 3 / camera.zoom}
-                        y={h.cy - 3 / camera.zoom}
-                        width={6 / camera.zoom}
-                        height={6 / camera.zoom}
-                        fill="hsl(var(--primary))"
-                        stroke="white"
-                        strokeWidth={1 / camera.zoom}
-                        className="cursor-nwse-resize"
-                        style={{ pointerEvents: 'all' }}
+                        x={bounds.x - 3 / camera.zoom}
+                        y={bounds.y - 3 / camera.zoom}
+                        width={bounds.w + 6 / camera.zoom}
+                        height={bounds.h + 6 / camera.zoom}
+                        fill="none"
+                        stroke="hsl(var(--primary))"
+                        strokeWidth={1.5 / camera.zoom}
+                        strokeDasharray={`${4 / camera.zoom}`}
+                        style={{ pointerEvents: 'none' }}
                       />
-                    ))}
-                  </>
-                )}
-              </g>
-            );
-          })}
+                      {[
+                        { cx: bounds.x, cy: bounds.y },
+                        { cx: bounds.x + bounds.w, cy: bounds.y },
+                        { cx: bounds.x + bounds.w, cy: bounds.y + bounds.h },
+                        { cx: bounds.x, cy: bounds.y + bounds.h },
+                      ].map((h, i) => (
+                        <rect
+                          key={i}
+                          x={h.cx - 3 / camera.zoom}
+                          y={h.cy - 3 / camera.zoom}
+                          width={6 / camera.zoom}
+                          height={6 / camera.zoom}
+                          fill="hsl(var(--primary))"
+                          stroke="white"
+                          strokeWidth={1 / camera.zoom}
+                          className="cursor-nwse-resize"
+                          style={{ pointerEvents: 'all' }}
+                        />
+                      ))}
+                    </>
+                  )}
+                </g>
+              );
+            })}
 
-          {/* Draw preview */}
-          {drawRect && (
-            <rect
-              x={Math.min(drawRect.sx, drawRect.ex)}
-              y={Math.min(drawRect.sy, drawRect.ey)}
-              width={Math.abs(drawRect.ex - drawRect.sx)}
-              height={Math.abs(drawRect.ey - drawRect.sy)}
-              fill="hsl(var(--primary) / 0.2)"
-              stroke="hsl(var(--primary))"
-              strokeWidth={1.5 / camera.zoom}
-              strokeDasharray={`${4 / camera.zoom}`}
-            />
-          )}
-        </svg>
+            {drawRect && (
+              <rect
+                x={Math.min(drawRect.sx, drawRect.ex)}
+                y={Math.min(drawRect.sy, drawRect.ey)}
+                width={Math.abs(drawRect.ex - drawRect.sx)}
+                height={Math.abs(drawRect.ey - drawRect.sy)}
+                fill="hsl(var(--primary) / 0.2)"
+                stroke="hsl(var(--primary))"
+                strokeWidth={1.5 / camera.zoom}
+                strokeDasharray={`${4 / camera.zoom}`}
+              />
+            )}
+          </svg>
+        )}
       </div>
     </div>
   );
 }
 
-/** Find the topmost object at world coordinate */
 function findObjectAt(world: WorldPoint, objects: LayoutObject[]): LayoutObject | null {
   for (let i = objects.length - 1; i >= 0; i--) {
     const obj = objects[i];

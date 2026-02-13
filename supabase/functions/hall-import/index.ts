@@ -31,114 +31,120 @@ serve(async (req: Request) => {
 
   try {
     const formData = await req.formData();
-    const file = formData.get("file") as File | null;
 
-    if (!file) {
+    // Accept 2 SVG uploads: plattegrond + technisch
+    const plattegrondFile = formData.get("plattegrond") as File | null;
+    const technischFile = formData.get("technisch") as File | null;
+    // Legacy single file support
+    const legacyFile = formData.get("file") as File | null;
+
+    if (!plattegrondFile && !technischFile && !legacyFile) {
       return new Response(
-        JSON.stringify({ error: "No file uploaded. Send a 'file' field." }),
+        JSON.stringify({ error: "Upload at least one SVG file. Fields: 'plattegrond', 'technisch', or legacy 'file'." }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    const filename = file.name.toLowerCase();
-    const isDwg = filename.endsWith(".dwg");
-    const isSvg = filename.endsWith(".svg");
+    const supabase = createClient(
+      Deno.env.get("SUPABASE_URL")!,
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
+    );
 
-    if (!isDwg && !isSvg) {
-      return new Response(
-        JSON.stringify({ error: "Only .dwg and .svg files are supported" }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
+    let bbox = { minX: 0, minY: 0, maxX: 100, maxY: 60 };
+    let plattegrondUrl = "";
+    let technischUrl = "";
 
-    // TODO: Implement real DWG→DXF→SVG conversion pipeline
-    // Steps:
-    //   1. Store original file (dwg/svg) in Storage
-    //   2. If DWG: convert to DXF (via external service), then DXF→SVG
-    //   3. Detect units (mm vs m) from DWG metadata
-    //   4. Extract layers from SVG (group by <g> elements)
-    //   5. Compute bounding box from SVG viewBox
-    //   6. Store basemap.svg + basemap.json
-    //   7. Return HallBasemap
-
-    if (isSvg) {
-      // For SVG uploads: store directly and return basemap
-      const supabase = createClient(
-        Deno.env.get("SUPABASE_URL")!,
-        Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
-      );
+    // Helper: upload SVG and extract bbox
+    async function uploadSvg(file: File, storagePath: string): Promise<{ url: string; bbox?: typeof bbox }> {
+      const filename = file.name.toLowerCase();
+      if (!filename.endsWith(".svg")) {
+        throw new Error(`Only .svg files are supported, got: ${filename}`);
+      }
 
       const fileBuffer = await file.arrayBuffer();
-      const filePath = `${hallId}/basemap.svg`;
-
       const { error: uploadError } = await supabase.storage
         .from("hall-backgrounds")
-        .upload(filePath, fileBuffer, {
+        .upload(storagePath, fileBuffer, {
           contentType: "image/svg+xml",
           upsert: true,
         });
 
-      if (uploadError) {
-        return new Response(
-          JSON.stringify({ error: `Upload failed: ${uploadError.message}` }),
-          { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
-      }
+      if (uploadError) throw new Error(`Upload failed: ${uploadError.message}`);
 
       const { data: urlData } = supabase.storage
         .from("hall-backgrounds")
-        .getPublicUrl(filePath);
+        .getPublicUrl(storagePath);
 
       // Parse SVG for bbox
       const svgText = new TextDecoder().decode(fileBuffer);
-      let bbox = { minX: 0, minY: 0, maxX: 100, maxY: 60 };
-
+      let extractedBbox: typeof bbox | undefined;
       const viewBoxMatch = svgText.match(/viewBox=["']([^"']+)["']/);
       if (viewBoxMatch) {
         const parts = viewBoxMatch[1].trim().split(/[\s,]+/).map(Number);
         if (parts.length === 4 && parts.every(n => isFinite(n))) {
-          bbox = { minX: parts[0], minY: parts[1], maxX: parts[0] + parts[2], maxY: parts[1] + parts[3] };
+          extractedBbox = { minX: parts[0], minY: parts[1], maxX: parts[0] + parts[2], maxY: parts[1] + parts[3] };
         }
       }
 
-      // Update hall background_url
-      await supabase
-        .from("halls")
-        .update({ background_url: urlData.publicUrl, background_type: "svg" })
-        .eq("id", hallId);
-
-      const basemap = {
-        hallId,
-        units: "m" as const,
-        bbox,
-        layers: [
-          { id: "walls", name: "Muren", visible: true, kind: "walls" },
-          { id: "text", name: "Labels", visible: true, kind: "text" },
-          { id: "lights", name: "Verlichting", visible: false, kind: "lights" },
-          { id: "other", name: "Overig", visible: true, kind: "other" },
-        ],
-        svgUrl: urlData.publicUrl,
-        updatedAt: new Date().toISOString(),
-      };
-
-      return new Response(
-        JSON.stringify({ success: true, basemap }),
-        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+      return { url: urlData.publicUrl, bbox: extractedBbox };
     }
 
-    // DWG stub
+    // Upload plattegrond
+    if (plattegrondFile) {
+      const result = await uploadSvg(plattegrondFile, `${hallId}/plattegrond.svg`);
+      plattegrondUrl = result.url;
+      if (result.bbox) bbox = result.bbox;
+    } else if (legacyFile) {
+      // Legacy: single file → stored as plattegrond
+      const result = await uploadSvg(legacyFile, `${hallId}/plattegrond.svg`);
+      plattegrondUrl = result.url;
+      if (result.bbox) bbox = result.bbox;
+    }
+
+    // Upload technisch
+    if (technischFile) {
+      const result = await uploadSvg(technischFile, `${hallId}/technisch.svg`);
+      technischUrl = result.url;
+      // Use technisch bbox only if plattegrond didn't have one
+      if (result.bbox && !plattegrondUrl) bbox = result.bbox;
+    }
+
+    // Update hall background_url (legacy compat – use plattegrond as primary)
+    if (plattegrondUrl) {
+      await supabase
+        .from("halls")
+        .update({ background_url: plattegrondUrl, background_type: "svg" })
+        .eq("id", hallId);
+    }
+
+    // TODO: DWG→DXF→SVG conversion pipeline
+    // Steps:
+    //   1. Accept .dwg file upload
+    //   2. Convert DWG→DXF (via ODA File Converter or external service)
+    //   3. Convert DXF→SVG with layer mapping
+    //   4. Detect units (mm vs m) from DWG header
+    //   5. Extract/normalize layers into plattegrond + technisch SVGs
+    //   6. Store both SVGs and return HallBasemap
+
+    const basemap = {
+      hallId,
+      units: "m" as const,
+      bbox,
+      layers: [
+        { id: "walls", name: "Muren", visible: true, kind: "walls" },
+        { id: "text", name: "Labels", visible: true, kind: "text" },
+        { id: "lights", name: "Verlichting", visible: false, kind: "lights" },
+        { id: "other", name: "Overig", visible: true, kind: "other" },
+      ],
+      svgUrl: plattegrondUrl,
+      plattegrondSvgUrl: plattegrondUrl,
+      technischSvgUrl: technischUrl,
+      updatedAt: new Date().toISOString(),
+    };
+
     return new Response(
-      JSON.stringify({
-        success: false,
-        error: "DWG conversion is not yet implemented. Upload an SVG file instead.",
-        // TODO: Implement DWG→DXF→SVG pipeline
-        // - Use ODA File Converter or LibreCAD for DWG→DXF
-        // - Use dxf-parser + svg-builder for DXF→SVG
-        // - Detect units from DWG header
-        // - Map DWG layers to basemap layers
-      }),
-      { status: 501, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      JSON.stringify({ success: true, basemap }),
+      { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (error) {
     return new Response(

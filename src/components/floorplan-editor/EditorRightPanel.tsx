@@ -1,17 +1,24 @@
 /**
- * EditorRightPanel – layers toggles + properties inspector.
+ * EditorRightPanel – 3-layer system (Plattegrond, Technisch, Standenplan)
+ * with eye toggle, opacity slider, lock/unlock + properties inspector.
  */
 
 import { useState } from 'react';
-import { ChevronLeft, ChevronRight, Eye, EyeOff, Layers, Settings2 } from 'lucide-react';
+import {
+  ChevronLeft, ChevronRight, Eye, EyeOff, Layers, Settings2,
+  Lock, Unlock, Map, Wrench, LayoutGrid,
+} from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { Slider } from '@/components/ui/slider';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import { Separator } from '@/components/ui/separator';
 import { cn } from '@/lib/utils';
-import type { BasemapLayer, LayoutObject, LayoutStand } from '@/types/floorplan-editor';
+import type { EditorLayer, LayoutObject, LayoutStand } from '@/types/floorplan-editor';
 
 interface Exhibitor {
   id: string;
@@ -19,8 +26,10 @@ interface Exhibitor {
 }
 
 interface EditorRightPanelProps {
-  layers: BasemapLayer[];
-  onToggleLayer: (id: string) => void;
+  editorLayers: EditorLayer[];
+  onToggleLayerVisibility: (id: string) => void;
+  onSetLayerOpacity: (id: string, opacity: number) => void;
+  onToggleLayerLock: (id: string) => void;
   objects: LayoutObject[];
   selectedIds: Set<string>;
   exhibitors: Exhibitor[];
@@ -29,6 +38,12 @@ interface EditorRightPanelProps {
   collapsed: boolean;
   onToggleCollapse: () => void;
 }
+
+const LAYER_ICONS: Record<string, typeof Map> = {
+  plattegrond: Map,
+  technisch: Wrench,
+  standenplan: LayoutGrid,
+};
 
 function getStandBounds(stand: LayoutStand) {
   const xs = stand.polygon.map(p => p.x);
@@ -42,10 +57,11 @@ function getStandBounds(stand: LayoutStand) {
 }
 
 export function EditorRightPanel({
-  layers, onToggleLayer, objects, selectedIds, exhibitors, units,
+  editorLayers, onToggleLayerVisibility, onSetLayerOpacity, onToggleLayerLock,
+  objects, selectedIds, exhibitors, units,
   onUpdateObject, collapsed, onToggleCollapse,
 }: EditorRightPanelProps) {
-  const [activeTab, setActiveTab] = useState('properties');
+  const [activeTab, setActiveTab] = useState('layers');
 
   const selectedObjects = objects.filter(o => selectedIds.has(o.id));
   const singleSelected = selectedObjects.length === 1 ? selectedObjects[0] : null;
@@ -61,9 +77,9 @@ export function EditorRightPanel({
   }
 
   return (
-    <div className="w-56 border-l border-border bg-card flex flex-col shrink-0">
+    <div className="w-60 border-l border-border bg-card flex flex-col shrink-0">
       <div className="flex items-center justify-between px-2 py-1.5 border-b border-border">
-        <span className="text-xs font-semibold text-foreground uppercase tracking-wider">Eigenschappen</span>
+        <span className="text-xs font-semibold text-foreground uppercase tracking-wider">Paneel</span>
         <Button variant="ghost" size="icon" className="h-5 w-5" onClick={onToggleCollapse}>
           <ChevronRight className="w-3 h-3" />
         </Button>
@@ -71,13 +87,97 @@ export function EditorRightPanel({
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col min-h-0">
         <TabsList className="mx-2 mt-1 h-7">
-          <TabsTrigger value="properties" className="text-xs h-6 gap-1">
-            <Settings2 className="w-3 h-3" /> Eigenschappen
-          </TabsTrigger>
           <TabsTrigger value="layers" className="text-xs h-6 gap-1">
             <Layers className="w-3 h-3" /> Lagen
           </TabsTrigger>
+          <TabsTrigger value="properties" className="text-xs h-6 gap-1">
+            <Settings2 className="w-3 h-3" /> Eigenschappen
+          </TabsTrigger>
         </TabsList>
+
+        {/* Layers tab – Expodoc style */}
+        <TabsContent value="layers" className="flex-1 min-h-0 mt-0">
+          <ScrollArea className="h-full">
+            <div className="p-2 space-y-1">
+              {editorLayers.map(layer => {
+                const Icon = LAYER_ICONS[layer.kind] || Layers;
+                return (
+                  <div key={layer.id} className="rounded-md border border-border bg-background p-2 space-y-1.5">
+                    {/* Header row: icon + name + eye + lock */}
+                    <div className="flex items-center gap-1.5">
+                      <Icon className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
+                      <span className={cn(
+                        'flex-1 text-xs font-medium truncate',
+                        !layer.visible && 'text-muted-foreground line-through',
+                      )}>
+                        {layer.name}
+                      </span>
+
+                      {/* Lock (only for standenplan) */}
+                      {layer.kind === 'standenplan' && (
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-5 w-5"
+                              onClick={() => onToggleLayerLock(layer.id)}
+                            >
+                              {layer.locked
+                                ? <Lock className="w-3 h-3 text-destructive" />
+                                : <Unlock className="w-3 h-3 text-muted-foreground" />
+                              }
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent side="left">
+                            <p>{layer.locked ? 'Ontgrendelen' : 'Vergrendelen'}</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      )}
+
+                      {/* Visibility toggle */}
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-5 w-5"
+                            onClick={() => onToggleLayerVisibility(layer.id)}
+                          >
+                            {layer.visible
+                              ? <Eye className="w-3 h-3 text-foreground" />
+                              : <EyeOff className="w-3 h-3 text-muted-foreground" />
+                            }
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent side="left">
+                          <p>{layer.visible ? 'Verbergen' : 'Tonen'}</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </div>
+
+                    {/* Opacity slider */}
+                    {layer.visible && (
+                      <div className="flex items-center gap-2 pl-5">
+                        <Slider
+                          value={[layer.opacity]}
+                          onValueChange={([v]) => onSetLayerOpacity(layer.id, v)}
+                          min={0}
+                          max={100}
+                          step={5}
+                          className="flex-1"
+                        />
+                        <span className="text-[10px] text-muted-foreground font-mono w-7 text-right">
+                          {layer.opacity}%
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </ScrollArea>
+        </TabsContent>
 
         {/* Properties tab */}
         <TabsContent value="properties" className="flex-1 min-h-0 mt-0">
@@ -103,33 +203,6 @@ export function EditorRightPanel({
             </div>
           </ScrollArea>
         </TabsContent>
-
-        {/* Layers tab */}
-        <TabsContent value="layers" className="flex-1 min-h-0 mt-0">
-          <ScrollArea className="h-full">
-            <div className="px-2 py-2 space-y-0.5">
-              {layers.length === 0 ? (
-                <p className="text-xs text-muted-foreground px-2 py-4 text-center">Geen lagen</p>
-              ) : (
-                layers.map(layer => (
-                  <button
-                    key={layer.id}
-                    className="w-full flex items-center gap-2 px-2 py-1.5 rounded hover:bg-muted text-xs transition-colors"
-                    onClick={() => onToggleLayer(layer.id)}
-                  >
-                    {layer.visible
-                      ? <Eye className="w-3.5 h-3.5 text-foreground" />
-                      : <EyeOff className="w-3.5 h-3.5 text-muted-foreground" />
-                    }
-                    <span className={cn('flex-1 text-left', !layer.visible && 'text-muted-foreground')}>
-                      {layer.name}
-                    </span>
-                  </button>
-                ))
-              )}
-            </div>
-          </ScrollArea>
-        </TabsContent>
       </Tabs>
     </div>
   );
@@ -149,59 +222,39 @@ function StandProperties({
 
   return (
     <>
-      {/* Position */}
       <div>
         <Label className="text-xs text-muted-foreground">Positie</Label>
         <div className="grid grid-cols-2 gap-1.5 mt-1">
           <div>
             <span className="text-[10px] text-muted-foreground">X</span>
-            <Input
-              value={Math.round(bounds.x * 100) / 100}
-              className="h-6 text-xs"
-              readOnly
-            />
+            <Input value={Math.round(bounds.x * 100) / 100} className="h-6 text-xs" readOnly />
           </div>
           <div>
             <span className="text-[10px] text-muted-foreground">Y</span>
-            <Input
-              value={Math.round(bounds.y * 100) / 100}
-              className="h-6 text-xs"
-              readOnly
-            />
+            <Input value={Math.round(bounds.y * 100) / 100} className="h-6 text-xs" readOnly />
           </div>
         </div>
       </div>
 
-      {/* Size */}
       <div>
         <Label className="text-xs text-muted-foreground">Afmetingen ({unitLabel})</Label>
         <div className="grid grid-cols-2 gap-1.5 mt-1">
           <div>
             <span className="text-[10px] text-muted-foreground">B</span>
-            <Input
-              value={Math.round(bounds.w * 100) / 100}
-              className="h-6 text-xs"
-              readOnly
-            />
+            <Input value={Math.round(bounds.w * 100) / 100} className="h-6 text-xs" readOnly />
           </div>
           <div>
             <span className="text-[10px] text-muted-foreground">H</span>
-            <Input
-              value={Math.round(bounds.h * 100) / 100}
-              className="h-6 text-xs"
-              readOnly
-            />
+            <Input value={Math.round(bounds.h * 100) / 100} className="h-6 text-xs" readOnly />
           </div>
         </div>
       </div>
 
-      {/* Area */}
       <div>
         <Label className="text-xs text-muted-foreground">Oppervlakte</Label>
         <p className="text-xs font-medium">{Math.round(bounds.w * bounds.h * 100) / 100} {unitLabel}²</p>
       </div>
 
-      {/* Label */}
       <div>
         <Label className="text-xs text-muted-foreground">Standnr.</Label>
         <Input
@@ -212,7 +265,6 @@ function StandProperties({
         />
       </div>
 
-      {/* Exhibitor */}
       <div>
         <Label className="text-xs text-muted-foreground">Exposant</Label>
         <Select
@@ -231,7 +283,6 @@ function StandProperties({
         </Select>
       </div>
 
-      {/* Status */}
       <div>
         <Label className="text-xs text-muted-foreground">Status</Label>
         <Select
