@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Loader2, PanelLeft, PanelRight } from 'lucide-react';
+import { Loader2, PanelLeft, PanelRight, Pencil } from 'lucide-react';
 import { useEventRole } from '@/hooks/useEventRole';
 import { useDarkMode } from '@/hooks/useDarkMode';
 import { useFullscreen } from '@/hooks/useFullscreen';
@@ -152,7 +152,7 @@ export default function FloorplanEditor() {
 
         {/* Toolbar Row 2: Editor tools (only when canEdit) */}
         {canEdit && (
-          <div className="flex items-center bg-card/80 border-b border-border px-2 py-1.5 gap-2">
+          <div className="flex items-center justify-between bg-card/80 border-b border-border px-2 py-1.5 gap-2">
             <DrawModeToolbar
               activeTool={editor.activeTool}
               onToolChange={editor.setActiveTool}
@@ -168,6 +168,15 @@ export default function FloorplanEditor() {
               onAddWithPreset={editor.addWithPreset}
               canEdit={canEdit}
             />
+            <Button
+              variant="outline"
+              size="sm"
+              className="ml-auto gap-1.5 text-xs"
+              onClick={() => navigate(`/editor/${editor.selectedFloorplanId || ''}/${eventId}`)}
+            >
+              <Pencil className="w-3.5 h-3.5" />
+              Pro Editor
+            </Button>
           </div>
         )}
 
