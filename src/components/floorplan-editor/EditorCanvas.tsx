@@ -373,6 +373,26 @@ export function EditorCanvas({
           </span>
         </div>
       )}
+
+      {/* DEV: ALT-held coordinate tooltip */}
+      {altHeld && screenCursor && (
+        <div
+          className="absolute pointer-events-none select-none z-50"
+          style={{
+            left: screenCursor.x + 16,
+            top: screenCursor.y - 8,
+          }}
+        >
+          <div className="bg-foreground text-background text-xs font-mono px-2 py-1 rounded shadow-lg whitespace-nowrap">
+            {(() => {
+              if (!containerRef.current) return '…';
+              const rect = containerRef.current.getBoundingClientRect();
+              const w = screenToWorld({ x: screenCursor.x, y: screenCursor.y }, camera);
+              return `x: ${w.x.toFixed(1)}m  y: ${w.y.toFixed(1)}m`;
+            })()}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
