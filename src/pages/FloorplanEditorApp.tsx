@@ -56,6 +56,7 @@ export default function FloorplanEditorApp() {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [leftCollapsed, setLeftCollapsed] = useState(false);
   const [rightCollapsed, setRightCollapsed] = useState(false);
+  const [activeHallZone, setActiveHallZone] = useState<string | null>(null);
 
   // ---- Basemap ----
   const { basemap, loading: basemapLoading, error: basemapError } = useBasemapLoader(selectedHallId || null);
