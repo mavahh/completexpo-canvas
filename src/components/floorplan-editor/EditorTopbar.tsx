@@ -38,6 +38,7 @@ interface EditorTopbarProps {
   onZoomIn: () => void;
   onZoomOut: () => void;
   onFit: () => void;
+  onFitToBounds: (bbox: BBox) => void;
   showGrid: boolean;
   onToggleGrid: () => void;
   snapEnabled: boolean;
