@@ -151,6 +151,12 @@ export function EditorCanvas({
     const world = getWorld(e);
     onCursorMove(world);
 
+    // Track screen cursor for ALT tooltip
+    if (containerRef.current) {
+      const rect = containerRef.current.getBoundingClientRect();
+      setScreenCursor({ x: e.clientX - rect.left, y: e.clientY - rect.top });
+    }
+
     if (drawRect) {
       setDrawRect(prev => prev ? { ...prev, ex: snap(world.x), ey: snap(world.y) } : null);
       return;
