@@ -6,6 +6,11 @@ import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import type { HallBasemap, BasemapLayer, BBox } from '@/types/floorplan-editor';
 
+/** Extended basemap with SVG-to-world scale factor */
+export interface LoadedBasemap extends HallBasemap {
+  svgScale: number;
+}
+
 export function useBasemapLoader(hallId: string | null) {
   const [basemap, setBasemap] = useState<HallBasemap | null>(null);
   const [loading, setLoading] = useState(false);
