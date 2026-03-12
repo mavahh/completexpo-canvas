@@ -199,6 +199,7 @@ export function EditorCanvas({
         style={{
           transform: `translate(${camera.x}px, ${camera.y}px) scale(${camera.zoom})`,
           willChange: 'transform',
+          transition: animating ? 'transform 400ms cubic-bezier(0.4, 0, 0.2, 1)' : 'none',
         }}
       >
         {/* Grid */}
