@@ -62,6 +62,7 @@ function getStandBounds(stand: LayoutStand) {
 export function EditorCanvas({
   camera, basemap, editorLayers, objects, selectedIds, activeTool,
   showGrid, snapEnabled, gridSize, spacePressed, standenplanLocked,
+  animating = false, activeHallZone = null,
   onSelect, onCreateRectStand, onUpdateObject, onUpdateObjectSilent, onCursorMove,
   containerRef, pointerHandlers,
 }: EditorCanvasProps) {
