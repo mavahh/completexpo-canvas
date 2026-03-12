@@ -23,7 +23,7 @@ export function useAutosave({
 }: UseAutosaveProps) {
   const [saveStatus, setSaveStatus] = useState<SaveStatus>('saved');
   const [lastSavedAt, setLastSavedAt] = useState<Date | null>(null);
-  const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const saveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const standsRef = useRef(stands);
   
   // Keep ref updated

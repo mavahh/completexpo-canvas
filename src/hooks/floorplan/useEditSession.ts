@@ -22,7 +22,7 @@ export function useEditSession({ floorplanId, canEdit }: UseEditSessionProps) {
   const { user } = useAuth();
   const [otherEditors, setOtherEditors] = useState<EditSession[]>([]);
   const [sessionId, setSessionId] = useState<string | null>(null);
-  const heartbeatRef = useRef<NodeJS.Timeout | null>(null);
+  const heartbeatRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   // Create/update session
   const updateSession = useCallback(async () => {

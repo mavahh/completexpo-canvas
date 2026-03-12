@@ -36,7 +36,7 @@ export function useFloorplanData({ eventId, canEdit }: UseFloorplanDataProps) {
     BLOCKED: true,
   });
 
-  const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const saveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const floorplan = useMemo(() => 
     floorplans.find((fp) => fp.id === selectedFloorplanId),
