@@ -62,7 +62,7 @@ export default function FloorplanEditorApp() {
   const { basemap, loading: basemapLoading, error: basemapError } = useBasemapLoader(selectedHallId || null);
 
   // ---- Camera ----
-  const { camera, fit, zoomIn, zoomOut, zoomPercent, pointerHandlers, spacePressed } = useEditorCamera({
+  const { camera, fit, fitAnimated, animating, zoomIn, zoomOut, zoomPercent, pointerHandlers, spacePressed } = useEditorCamera({
     containerRef,
     initialBBox: basemap?.bbox,
   });
