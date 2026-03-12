@@ -56,12 +56,13 @@ export default function FloorplanEditorApp() {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [leftCollapsed, setLeftCollapsed] = useState(false);
   const [rightCollapsed, setRightCollapsed] = useState(false);
+  const [activeHallZone, setActiveHallZone] = useState<string | null>(null);
 
   // ---- Basemap ----
   const { basemap, loading: basemapLoading, error: basemapError } = useBasemapLoader(selectedHallId || null);
 
   // ---- Camera ----
-  const { camera, fit, zoomIn, zoomOut, zoomPercent, pointerHandlers, spacePressed } = useEditorCamera({
+  const { camera, fit, fitAnimated, animating, zoomIn, zoomOut, zoomPercent, pointerHandlers, spacePressed } = useEditorCamera({
     containerRef,
     initialBBox: basemap?.bbox,
   });
@@ -214,8 +215,11 @@ export default function FloorplanEditorApp() {
           zoomPercent={zoomPercent}
           onZoomIn={zoomIn}
           onZoomOut={zoomOut}
-          onFit={() => basemap?.bbox && fit(basemap.bbox)}
-          onFitToBounds={fit}
+          onFit={() => { setActiveHallZone(null); basemap?.bbox && fit(basemap.bbox); }}
+          onFitToBounds={(bbox) => fitAnimated(bbox)}
+          onHallZoneSelect={(zoneName, bbox) => { setActiveHallZone(zoneName); fitAnimated(bbox); }}
+          activeHallZone={activeHallZone}
+          basemapBBox={basemap?.bbox}
           showGrid={showGrid}
           onToggleGrid={() => setShowGrid(g => !g)}
           snapEnabled={snapEnabled}
@@ -268,6 +272,8 @@ export default function FloorplanEditorApp() {
               gridSize={gridSize}
               spacePressed={spacePressed}
               standenplanLocked={standenplanLocked}
+              animating={animating}
+              activeHallZone={activeHallZone}
               onSelect={setSelectedIds}
               onCreateRectStand={(x, y, w, h) => {
                 const stand = editorObjects.createRectStand(x, y, w, h);

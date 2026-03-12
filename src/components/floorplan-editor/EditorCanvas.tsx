@@ -24,6 +24,10 @@ interface EditorCanvasProps {
   gridSize: number;
   spacePressed: boolean;
   standenplanLocked: boolean;
+  /** When true, apply CSS transition on the world transform for animated camera moves */
+  animating?: boolean;
+  /** Active hall zone name for watermark display */
+  activeHallZone?: string | null;
   onSelect: (ids: Set<string>) => void;
   onCreateRectStand: (x: number, y: number, w: number, h: number) => void;
   onUpdateObject: (id: string, updates: Partial<LayoutObject>) => void;
@@ -58,6 +62,7 @@ function getStandBounds(stand: LayoutStand) {
 export function EditorCanvas({
   camera, basemap, editorLayers, objects, selectedIds, activeTool,
   showGrid, snapEnabled, gridSize, spacePressed, standenplanLocked,
+  animating = false, activeHallZone = null,
   onSelect, onCreateRectStand, onUpdateObject, onUpdateObjectSilent, onCursorMove,
   containerRef, pointerHandlers,
 }: EditorCanvasProps) {
@@ -194,6 +199,7 @@ export function EditorCanvas({
         style={{
           transform: `translate(${camera.x}px, ${camera.y}px) scale(${camera.zoom})`,
           willChange: 'transform',
+          transition: animating ? 'transform 400ms cubic-bezier(0.4, 0, 0.2, 1)' : 'none',
         }}
       >
         {/* Grid */}
@@ -328,6 +334,21 @@ export function EditorCanvas({
           </svg>
         )}
       </div>
+
+      {/* Hall zone watermark */}
+      {activeHallZone && (
+        <div
+          className="absolute inset-0 flex items-center justify-center pointer-events-none select-none"
+          style={{ zIndex: 1 }}
+        >
+          <span
+            className="text-foreground font-bold uppercase tracking-widest"
+            style={{ fontSize: '6rem', opacity: 0.06 }}
+          >
+            {activeHallZone}
+          </span>
+        </div>
+      )}
     </div>
   );
 }

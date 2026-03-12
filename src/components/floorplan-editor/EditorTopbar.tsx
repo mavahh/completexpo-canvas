@@ -14,9 +14,6 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select';
-import {
-  DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
 import { cn } from '@/lib/utils';
 import { HALL_BOUNDS, HALL_NAMES } from '@/config/hallBounds';
 import type { SaveStatus } from '@/hooks/floorplan-editor/useEditorAutosave';
@@ -39,6 +36,9 @@ interface EditorTopbarProps {
   onZoomOut: () => void;
   onFit: () => void;
   onFitToBounds: (bbox: BBox) => void;
+  /** Called when user selects a hall zone (name) or null for "Volledig plan" */
+  onHallZoneSelect: (zoneName: string | null, bbox: BBox) => void;
+  activeHallZone: string | null;
   showGrid: boolean;
   onToggleGrid: () => void;
   snapEnabled: boolean;
@@ -52,6 +52,7 @@ interface EditorTopbarProps {
   onRedo: () => void;
   saveStatus: SaveStatus;
   onSaveNow: () => void;
+  basemapBBox?: BBox | null;
 }
 
 const TOOLS: { id: EditorToolType; icon: typeof MousePointer2; label: string; shortcut?: string }[] = [
@@ -72,6 +73,7 @@ const SAVE_LABELS: Record<SaveStatus, { text: string; className: string }> = {
 export function EditorTopbar({
   eventId, eventName, activeTool, onToolChange,
   zoomPercent, onZoomIn, onZoomOut, onFit, onFitToBounds,
+  onHallZoneSelect, activeHallZone, basemapBBox,
   showGrid, onToggleGrid, snapEnabled, onToggleSnap,
   hallOptions, selectedHallId, onHallSwitch,
   canUndo, canRedo, onUndo, onRedo,
@@ -173,26 +175,27 @@ export function EditorTopbar({
         <Separator orientation="vertical" className="h-4" />
 
         {/* Hall zone navigation */}
-        <DropdownMenu>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="sm" className="h-6 gap-1 text-xs px-2">
-                  <MapPin className="w-3.5 h-3.5" />
-                  <span className="hidden sm:inline">Hallen</span>
-                </Button>
-              </DropdownMenuTrigger>
-            </TooltipTrigger>
-            <TooltipContent side="bottom"><p>Navigeer naar hal</p></TooltipContent>
-          </Tooltip>
-          <DropdownMenuContent align="end">
+        <Select
+          value={activeHallZone || '__full__'}
+          onValueChange={(v) => {
+            if (v === '__full__' && basemapBBox) {
+              onHallZoneSelect(null, basemapBBox);
+            } else if (HALL_BOUNDS[v]) {
+              onHallZoneSelect(v, HALL_BOUNDS[v]);
+            }
+          }}
+        >
+          <SelectTrigger className="h-6 w-[140px] text-xs">
+            <MapPin className="w-3 h-3 mr-1 shrink-0" />
+            <SelectValue placeholder="Hal zone…" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="__full__">Volledig plan</SelectItem>
             {HALL_NAMES.map(name => (
-              <DropdownMenuItem key={name} onClick={() => onFitToBounds(HALL_BOUNDS[name])}>
-                {name}
-              </DropdownMenuItem>
+              <SelectItem key={name} value={name}>{name}</SelectItem>
             ))}
-          </DropdownMenuContent>
-        </DropdownMenu>
+          </SelectContent>
+        </Select>
 
         <Separator orientation="vertical" className="h-4" />
 

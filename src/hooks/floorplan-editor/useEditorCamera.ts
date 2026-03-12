@@ -1,9 +1,10 @@
 /**
  * useEditorCamera – manages camera state (pan/zoom) for the floorplan editor.
  * Provides mouse-wheel zoom-to-cursor, space+drag pan, fit-to-bounds, shortcuts.
+ * Supports animated transitions via CSS transition toggling.
  */
 
-import { useState, useCallback, useEffect, RefObject } from 'react';
+import { useState, useCallback, useEffect, useRef, RefObject } from 'react';
 import type { Camera, BBox } from '@/types/floorplan-editor';
 import { fitToBounds, zoomAtPoint, clampZoom, type ViewportSize } from '@/lib/camera';
 
@@ -12,11 +13,16 @@ interface UseEditorCameraOptions {
   initialBBox?: BBox | null;
 }
 
+const PADDING = 60;
+
 export function useEditorCamera({ containerRef, initialBBox }: UseEditorCameraOptions) {
   const [camera, setCamera] = useState<Camera>({ x: 0, y: 0, zoom: 1 });
   const [spacePressed, setSpacePressed] = useState(false);
   const [isPanning, setIsPanning] = useState(false);
   const [panStart, setPanStart] = useState({ x: 0, y: 0 });
+  /** When true, the world-transform container should apply a CSS transition */
+  const [animating, setAnimating] = useState(false);
+  const animTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // ---- Viewport helper ----
   const getViewport = useCallback((): ViewportSize => {
@@ -25,11 +31,52 @@ export function useEditorCamera({ containerRef, initialBBox }: UseEditorCameraOp
     return { width: el.clientWidth, height: el.clientHeight };
   }, [containerRef]);
 
-  // ---- Fit to bbox ----
+  // ---- Fit to bbox (instant) ----
   const fit = useCallback((bbox: BBox | null | undefined) => {
     if (!bbox) return;
-    setCamera(fitToBounds(bbox, getViewport()));
+    const vp = getViewport();
+    const bw = bbox.maxX - bbox.minX;
+    const bh = bbox.maxY - bbox.minY;
+    const zoom = clampZoom(Math.min(
+      (vp.width - PADDING * 2) / bw,
+      (vp.height - PADDING * 2) / bh,
+    ));
+    setCamera({
+      x: -bbox.minX * zoom + (vp.width - bw * zoom) / 2,
+      y: -bbox.minY * zoom + (vp.height - bh * zoom) / 2,
+      zoom,
+    });
   }, [getViewport]);
+
+  // ---- Animated fit to bbox (400ms CSS transition) ----
+  const fitAnimated = useCallback((bbox: BBox | null | undefined) => {
+    if (!bbox) return;
+    // Clear any pending animation timer
+    if (animTimerRef.current) clearTimeout(animTimerRef.current);
+
+    setAnimating(true);
+
+    const vp = getViewport();
+    const bw = bbox.maxX - bbox.minX;
+    const bh = bbox.maxY - bbox.minY;
+    const zoom = clampZoom(Math.min(
+      (vp.width - PADDING * 2) / bw,
+      (vp.height - PADDING * 2) / bh,
+    ));
+    setCamera({
+      x: -bbox.minX * zoom + (vp.width - bw * zoom) / 2,
+      y: -bbox.minY * zoom + (vp.height - bh * zoom) / 2,
+      zoom,
+    });
+
+    // Turn off animating flag after transition completes
+    animTimerRef.current = setTimeout(() => setAnimating(false), 420);
+  }, [getViewport]);
+
+  // Cleanup timer
+  useEffect(() => {
+    return () => { if (animTimerRef.current) clearTimeout(animTimerRef.current); };
+  }, []);
 
   // Initial fit
   useEffect(() => {
@@ -52,6 +99,8 @@ export function useEditorCamera({ containerRef, initialBBox }: UseEditorCameraOp
 
     const onWheel = (e: WheelEvent) => {
       e.preventDefault();
+      // Disable animation on manual interaction
+      setAnimating(false);
       const rect = el.getBoundingClientRect();
       const cursor = { x: e.clientX - rect.left, y: e.clientY - rect.top };
       const delta = e.deltaY < 0 ? 1 : -1;
@@ -79,6 +128,7 @@ export function useEditorCamera({ containerRef, initialBBox }: UseEditorCameraOp
   const onPointerDown = useCallback((e: React.PointerEvent) => {
     if (e.button === 1 || spacePressed) {
       e.preventDefault();
+      setAnimating(false); // cancel animation on manual pan
       setIsPanning(true);
       setPanStart({ x: e.clientX - camera.x, y: e.clientY - camera.y });
     }
@@ -112,11 +162,12 @@ export function useEditorCamera({ containerRef, initialBBox }: UseEditorCameraOp
     setCamera,
     spacePressed,
     isPanning,
+    animating,
     fit,
+    fitAnimated,
     zoomIn,
     zoomOut,
     zoomPercent: Math.round(camera.zoom * 100),
-    // Pointer handlers to spread on the viewport container
     pointerHandlers: {
       onPointerDown,
       onPointerMove,
