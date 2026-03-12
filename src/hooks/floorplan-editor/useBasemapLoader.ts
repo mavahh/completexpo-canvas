@@ -35,6 +35,8 @@ export function useBasemapLoader(hallId: string | null) {
 
       const widthM = Number(hall.width_meters) || 100;
       const heightM = Number(hall.height_meters) || 60;
+      // SVG-to-world scale: 1 SVG unit × svgScale = 1 world unit (meter)
+      const svgScale = Number(hall.scale_ratio) || 1;
       const bbox: BBox = { minX: 0, minY: 0, maxX: widthM, maxY: heightM };
 
       // Default basemap sub-layers
