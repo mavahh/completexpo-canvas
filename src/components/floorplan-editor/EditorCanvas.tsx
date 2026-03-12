@@ -334,6 +334,21 @@ export function EditorCanvas({
           </svg>
         )}
       </div>
+
+      {/* Hall zone watermark */}
+      {activeHallZone && (
+        <div
+          className="absolute inset-0 flex items-center justify-center pointer-events-none select-none"
+          style={{ zIndex: 1 }}
+        >
+          <span
+            className="text-foreground font-bold uppercase tracking-widest"
+            style={{ fontSize: '6rem', opacity: 0.06 }}
+          >
+            {activeHallZone}
+          </span>
+        </div>
+      )}
     </div>
   );
 }
