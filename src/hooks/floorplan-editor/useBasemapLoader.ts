@@ -23,7 +23,7 @@ export function useBasemapLoader(hallId: string | null) {
     try {
       const { data: hall, error: hallError } = await supabase
         .from('halls')
-        .select('id, name, width_meters, height_meters, scale_ratio, background_url, background_type')
+        .select('id, name, width_meters, height_meters, scale_ratio, background_url, background_type, background_width_meters, background_height_meters')
         .eq('id', id)
         .single();
 
