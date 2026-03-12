@@ -1,12 +1,12 @@
 /**
- * EditorTopbar – unified toolbar with tools, zoom, hall switch, undo/redo.
+ * EditorTopbar – unified toolbar with tools, zoom, hall navigation, undo/redo.
  */
 
 import { useNavigate } from 'react-router-dom';
 import {
   ArrowLeft, MousePointer2, Square, Pentagon, Type, Ruler,
   Undo2, Redo2, ZoomIn, ZoomOut, Crosshair, Grid3X3, Magnet,
-  Maximize, ChevronDown, Save,
+  Maximize, Save, MapPin,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
@@ -14,8 +14,13 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select';
+import {
+  DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { cn } from '@/lib/utils';
+import { HALL_BOUNDS, HALL_NAMES } from '@/config/hallBounds';
 import type { SaveStatus } from '@/hooks/floorplan-editor/useEditorAutosave';
+import type { BBox } from '@/types/floorplan-editor';
 
 export type EditorToolType = 'select' | 'draw-rect' | 'draw-poly' | 'text' | 'measure';
 
