@@ -24,6 +24,10 @@ interface EditorCanvasProps {
   gridSize: number;
   spacePressed: boolean;
   standenplanLocked: boolean;
+  /** When true, apply CSS transition on the world transform for animated camera moves */
+  animating?: boolean;
+  /** Active hall zone name for watermark display */
+  activeHallZone?: string | null;
   onSelect: (ids: Set<string>) => void;
   onCreateRectStand: (x: number, y: number, w: number, h: number) => void;
   onUpdateObject: (id: string, updates: Partial<LayoutObject>) => void;
