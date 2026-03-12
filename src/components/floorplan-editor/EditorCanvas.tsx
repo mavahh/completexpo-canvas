@@ -68,6 +68,17 @@ export function EditorCanvas({
 }: EditorCanvasProps) {
   const [drawRect, setDrawRect] = useState<{ sx: number; sy: number; ex: number; ey: number } | null>(null);
   const [dragging, setDragging] = useState<{ id: string; startWorld: WorldPoint; origPolygon: WorldPoint[] } | null>(null);
+  const [altHeld, setAltHeld] = useState(false);
+  const [screenCursor, setScreenCursor] = useState<{ x: number; y: number } | null>(null);
+
+  // Track ALT key
+  useEffect(() => {
+    const down = (e: KeyboardEvent) => { if (e.key === 'Alt') setAltHeld(true); };
+    const up = (e: KeyboardEvent) => { if (e.key === 'Alt') setAltHeld(false); };
+    window.addEventListener('keydown', down);
+    window.addEventListener('keyup', up);
+    return () => { window.removeEventListener('keydown', down); window.removeEventListener('keyup', up); };
+  }, []);
 
   const snap = useCallback((v: number) => {
     if (!snapEnabled) return v;
