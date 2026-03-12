@@ -39,6 +39,9 @@ interface EditorTopbarProps {
   onZoomOut: () => void;
   onFit: () => void;
   onFitToBounds: (bbox: BBox) => void;
+  /** Called when user selects a hall zone (name) or null for "Volledig plan" */
+  onHallZoneSelect: (zoneName: string | null, bbox: BBox) => void;
+  activeHallZone: string | null;
   showGrid: boolean;
   onToggleGrid: () => void;
   snapEnabled: boolean;
@@ -52,6 +55,7 @@ interface EditorTopbarProps {
   onRedo: () => void;
   saveStatus: SaveStatus;
   onSaveNow: () => void;
+  basemapBBox?: BBox | null;
 }
 
 const TOOLS: { id: EditorToolType; icon: typeof MousePointer2; label: string; shortcut?: string }[] = [
