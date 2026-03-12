@@ -194,6 +194,7 @@ export type Database = {
           is_locked: boolean
           is_visible: boolean
           name: string
+          opacity: number
           sort_order: number
           type: string
           updated_at: string
@@ -205,6 +206,7 @@ export type Database = {
           is_locked?: boolean
           is_visible?: boolean
           name: string
+          opacity?: number
           sort_order?: number
           type?: string
           updated_at?: string
@@ -216,6 +218,7 @@ export type Database = {
           is_locked?: boolean
           is_visible?: boolean
           name?: string
+          opacity?: number
           sort_order?: number
           type?: string
           updated_at?: string
