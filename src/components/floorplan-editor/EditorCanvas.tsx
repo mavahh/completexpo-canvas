@@ -98,6 +98,13 @@ export function EditorCanvas({
   const standenplanLayer = getLayer('standenplan');
 
   const handlePointerDown = useCallback((e: React.PointerEvent) => {
+    // DEV MODE: ALT+click logs world coordinates
+    if (e.altKey) {
+      const world = getWorld(e);
+      console.log(`📍 World coords: x=${world.x.toFixed(1)}m, y=${world.y.toFixed(1)}m`);
+      return;
+    }
+
     if (spacePressed || e.button === 1) {
       pointerHandlers.onPointerDown(e);
       return;
