@@ -215,8 +215,11 @@ export default function FloorplanEditorApp() {
           zoomPercent={zoomPercent}
           onZoomIn={zoomIn}
           onZoomOut={zoomOut}
-          onFit={() => basemap?.bbox && fit(basemap.bbox)}
-          onFitToBounds={fit}
+          onFit={() => { setActiveHallZone(null); basemap?.bbox && fit(basemap.bbox); }}
+          onFitToBounds={(bbox) => fitAnimated(bbox)}
+          onHallZoneSelect={(zoneName, bbox) => { setActiveHallZone(zoneName); fitAnimated(bbox); }}
+          activeHallZone={activeHallZone}
+          basemapBBox={basemap?.bbox}
           showGrid={showGrid}
           onToggleGrid={() => setShowGrid(g => !g)}
           snapEnabled={snapEnabled}
