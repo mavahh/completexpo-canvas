@@ -6,8 +6,13 @@ import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import type { HallBasemap, BasemapLayer, BBox } from '@/types/floorplan-editor';
 
+/** Extended basemap with SVG-to-world scale factor */
+export interface LoadedBasemap extends HallBasemap {
+  svgScale: number;
+}
+
 export function useBasemapLoader(hallId: string | null) {
-  const [basemap, setBasemap] = useState<HallBasemap | null>(null);
+  const [basemap, setBasemap] = useState<LoadedBasemap | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -18,7 +23,7 @@ export function useBasemapLoader(hallId: string | null) {
     try {
       const { data: hall, error: hallError } = await supabase
         .from('halls')
-        .select('id, name, width_meters, height_meters, scale_ratio, background_url, background_type')
+        .select('id, name, width_meters, height_meters, scale_ratio, background_url, background_type, background_width_meters, background_height_meters')
         .eq('id', id)
         .single();
 
@@ -30,6 +35,8 @@ export function useBasemapLoader(hallId: string | null) {
 
       const widthM = Number(hall.width_meters) || 100;
       const heightM = Number(hall.height_meters) || 60;
+      // SVG-to-world scale: 1 SVG unit × svgScale = 1 world unit (meter)
+      const svgScale = Number(hall.scale_ratio) || 1;
       const bbox: BBox = { minX: 0, minY: 0, maxX: widthM, maxY: heightM };
 
       // Default basemap sub-layers
@@ -55,14 +62,15 @@ export function useBasemapLoader(hallId: string | null) {
       const plattegrondSvgUrl = hasPlattegrond ? plattegrondUrl.publicUrl : (hall.background_url || '');
       const technischSvgUrl = hasTechnisch ? technischUrl.publicUrl : '';
 
-      const result: HallBasemap = {
+      const result: LoadedBasemap = {
         hallId: hall.id,
         units: 'm',
         bbox,
         layers,
-        svgUrl: plattegrondSvgUrl, // backward compat
+        svgUrl: plattegrondSvgUrl,
         plattegrondSvgUrl,
         technischSvgUrl,
+        svgScale,
         updatedAt: new Date().toISOString(),
       };
 

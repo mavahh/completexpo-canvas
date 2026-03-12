@@ -256,6 +256,7 @@ export default function FloorplanEditorApp() {
                 plattegrondSvgUrl: basemap.plattegrondSvgUrl,
                 technischSvgUrl: basemap.technischSvgUrl,
                 units: basemap.units,
+                svgScale: basemap.svgScale,
               } : null}
               editorLayers={editorLayers}
               objects={editorObjects.objects}
