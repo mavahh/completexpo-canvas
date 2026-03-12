@@ -195,6 +195,8 @@ export function EditorTopbar({
         </DropdownMenu>
 
         <Separator orientation="vertical" className="h-4" />
+
+        <Tooltip>
           <TooltipTrigger asChild>
             <Button
               variant={showGrid ? 'secondary' : 'ghost'}
