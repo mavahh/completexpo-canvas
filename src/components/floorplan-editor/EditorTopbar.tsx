@@ -14,9 +14,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select';
-import {
-  DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
+import { cn } from '@/lib/utils';
 import { cn } from '@/lib/utils';
 import { HALL_BOUNDS, HALL_NAMES } from '@/config/hallBounds';
 import type { SaveStatus } from '@/hooks/floorplan-editor/useEditorAutosave';
