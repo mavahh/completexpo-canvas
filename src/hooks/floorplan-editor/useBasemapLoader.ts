@@ -12,7 +12,7 @@ export interface LoadedBasemap extends HallBasemap {
 }
 
 export function useBasemapLoader(hallId: string | null) {
-  const [basemap, setBasemap] = useState<HallBasemap | null>(null);
+  const [basemap, setBasemap] = useState<LoadedBasemap | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
