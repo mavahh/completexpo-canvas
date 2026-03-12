@@ -78,6 +78,17 @@ export function HallSelector({
 
       if (error) throw error;
 
+      // Insert default editor layers for the new floorplan
+      const { error: layersError } = await supabase
+        .from('editor_layers')
+        .insert([
+          { floorplan_id: data.id, name: 'Plattegrond', type: 'plattegrond', sort_order: 0, is_visible: true, is_locked: false, opacity: 100 },
+          { floorplan_id: data.id, name: 'Technisch plan', type: 'technisch', sort_order: 1, is_visible: true, is_locked: false, opacity: 70 },
+          { floorplan_id: data.id, name: 'Standenplan', type: 'standenplan', sort_order: 2, is_visible: true, is_locked: false, opacity: 100 },
+        ]);
+
+      if (layersError) console.error('Failed to create default layers:', layersError);
+
       onFloorplanAdded(data);
       setOpen(false);
       setName('');
