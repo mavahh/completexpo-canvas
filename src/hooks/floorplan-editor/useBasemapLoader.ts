@@ -60,14 +60,15 @@ export function useBasemapLoader(hallId: string | null) {
       const plattegrondSvgUrl = hasPlattegrond ? plattegrondUrl.publicUrl : (hall.background_url || '');
       const technischSvgUrl = hasTechnisch ? technischUrl.publicUrl : '';
 
-      const result: HallBasemap = {
+      const result: LoadedBasemap = {
         hallId: hall.id,
         units: 'm',
         bbox,
         layers,
-        svgUrl: plattegrondSvgUrl, // backward compat
+        svgUrl: plattegrondSvgUrl,
         plattegrondSvgUrl,
         technischSvgUrl,
+        svgScale,
         updatedAt: new Date().toISOString(),
       };
 
