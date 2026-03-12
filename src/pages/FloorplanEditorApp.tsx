@@ -215,6 +215,7 @@ export default function FloorplanEditorApp() {
           onZoomIn={zoomIn}
           onZoomOut={zoomOut}
           onFit={() => basemap?.bbox && fit(basemap.bbox)}
+          onFitToBounds={fit}
           showGrid={showGrid}
           onToggleGrid={() => setShowGrid(g => !g)}
           snapEnabled={snapEnabled}

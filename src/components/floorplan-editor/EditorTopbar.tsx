@@ -172,7 +172,29 @@ export function EditorTopbar({
 
         <Separator orientation="vertical" className="h-4" />
 
-        <Tooltip>
+        {/* Hall zone navigation */}
+        <DropdownMenu>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="sm" className="h-6 gap-1 text-xs px-2">
+                  <MapPin className="w-3.5 h-3.5" />
+                  <span className="hidden sm:inline">Hallen</span>
+                </Button>
+              </DropdownMenuTrigger>
+            </TooltipTrigger>
+            <TooltipContent side="bottom"><p>Navigeer naar hal</p></TooltipContent>
+          </Tooltip>
+          <DropdownMenuContent align="end">
+            {HALL_NAMES.map(name => (
+              <DropdownMenuItem key={name} onClick={() => onFitToBounds(HALL_BOUNDS[name])}>
+                {name}
+              </DropdownMenuItem>
+            ))}
+          </DropdownMenuContent>
+        </DropdownMenu>
+
+        <Separator orientation="vertical" className="h-4" />
           <TooltipTrigger asChild>
             <Button
               variant={showGrid ? 'secondary' : 'ghost'}
