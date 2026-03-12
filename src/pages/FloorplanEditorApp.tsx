@@ -272,6 +272,8 @@ export default function FloorplanEditorApp() {
               gridSize={gridSize}
               spacePressed={spacePressed}
               standenplanLocked={standenplanLocked}
+              animating={animating}
+              activeHallZone={activeHallZone}
               onSelect={setSelectedIds}
               onCreateRectStand={(x, y, w, h) => {
                 const stand = editorObjects.createRectStand(x, y, w, h);
