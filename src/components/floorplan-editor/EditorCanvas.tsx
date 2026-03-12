@@ -6,7 +6,7 @@
  * All share the same camera transform.
  */
 
-import { useRef, useCallback, useState } from 'react';
+import { useRef, useCallback, useState, useEffect } from 'react';
 import { BasemapRenderer } from './BasemapRenderer';
 import { screenToWorld } from '@/lib/camera';
 import type { Camera, BBox, LayoutObject, LayoutStand, WorldPoint, EditorLayer } from '@/types/floorplan-editor';
