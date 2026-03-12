@@ -71,7 +71,7 @@ const SAVE_LABELS: Record<SaveStatus, { text: string; className: string }> = {
 
 export function EditorTopbar({
   eventId, eventName, activeTool, onToolChange,
-  zoomPercent, onZoomIn, onZoomOut, onFit,
+  zoomPercent, onZoomIn, onZoomOut, onFit, onFitToBounds,
   showGrid, onToggleGrid, snapEnabled, onToggleSnap,
   hallOptions, selectedHallId, onHallSwitch,
   canUndo, canRedo, onUndo, onRedo,
