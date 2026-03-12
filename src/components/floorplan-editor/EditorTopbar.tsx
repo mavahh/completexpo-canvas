@@ -1,12 +1,12 @@
 /**
- * EditorTopbar – unified toolbar with tools, zoom, hall switch, undo/redo.
+ * EditorTopbar – unified toolbar with tools, zoom, hall navigation, undo/redo.
  */
 
 import { useNavigate } from 'react-router-dom';
 import {
   ArrowLeft, MousePointer2, Square, Pentagon, Type, Ruler,
   Undo2, Redo2, ZoomIn, ZoomOut, Crosshair, Grid3X3, Magnet,
-  Maximize, ChevronDown, Save,
+  Maximize, Save, MapPin,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
@@ -14,8 +14,13 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select';
+import {
+  DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { cn } from '@/lib/utils';
+import { HALL_BOUNDS, HALL_NAMES } from '@/config/hallBounds';
 import type { SaveStatus } from '@/hooks/floorplan-editor/useEditorAutosave';
+import type { BBox } from '@/types/floorplan-editor';
 
 export type EditorToolType = 'select' | 'draw-rect' | 'draw-poly' | 'text' | 'measure';
 
@@ -33,6 +38,7 @@ interface EditorTopbarProps {
   onZoomIn: () => void;
   onZoomOut: () => void;
   onFit: () => void;
+  onFitToBounds: (bbox: BBox) => void;
   showGrid: boolean;
   onToggleGrid: () => void;
   snapEnabled: boolean;
@@ -65,7 +71,7 @@ const SAVE_LABELS: Record<SaveStatus, { text: string; className: string }> = {
 
 export function EditorTopbar({
   eventId, eventName, activeTool, onToolChange,
-  zoomPercent, onZoomIn, onZoomOut, onFit,
+  zoomPercent, onZoomIn, onZoomOut, onFit, onFitToBounds,
   showGrid, onToggleGrid, snapEnabled, onToggleSnap,
   hallOptions, selectedHallId, onHallSwitch,
   canUndo, canRedo, onUndo, onRedo,
@@ -163,6 +169,30 @@ export function EditorTopbar({
           </TooltipTrigger>
           <TooltipContent side="bottom"><p>Fit (0)</p></TooltipContent>
         </Tooltip>
+
+        <Separator orientation="vertical" className="h-4" />
+
+        {/* Hall zone navigation */}
+        <DropdownMenu>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="sm" className="h-6 gap-1 text-xs px-2">
+                  <MapPin className="w-3.5 h-3.5" />
+                  <span className="hidden sm:inline">Hallen</span>
+                </Button>
+              </DropdownMenuTrigger>
+            </TooltipTrigger>
+            <TooltipContent side="bottom"><p>Navigeer naar hal</p></TooltipContent>
+          </Tooltip>
+          <DropdownMenuContent align="end">
+            {HALL_NAMES.map(name => (
+              <DropdownMenuItem key={name} onClick={() => onFitToBounds(HALL_BOUNDS[name])}>
+                {name}
+              </DropdownMenuItem>
+            ))}
+          </DropdownMenuContent>
+        </DropdownMenu>
 
         <Separator orientation="vertical" className="h-4" />
 
