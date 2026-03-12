@@ -14,7 +14,7 @@ import type { EditorToolType } from './EditorTopbar';
 
 interface EditorCanvasProps {
   camera: Camera;
-  basemap: { bbox: BBox; plattegrondSvgUrl: string; technischSvgUrl: string; units: string } | null;
+  basemap: { bbox: BBox; plattegrondSvgUrl: string; technischSvgUrl: string; units: string; svgScale?: number } | null;
   editorLayers: EditorLayer[];
   objects: LayoutObject[];
   selectedIds: Set<string>;
