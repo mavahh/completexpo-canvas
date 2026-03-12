@@ -213,24 +213,24 @@ export function EditorCanvas({
           </svg>
         )}
 
-        {/* Layer 1: Plattegrond (read-only SVG) */}
+        {/* Layer 1: Plattegrond (read-only SVG) – scaled so SVG units map to world meters */}
         {basemap && plattegrondLayer?.visible && basemap.plattegrondSvgUrl && (
-          <div
-            className="absolute top-0 left-0 pointer-events-none"
-            style={{ width: bboxW, height: bboxH, opacity: (plattegrondLayer.opacity ?? 100) / 100 }}
-          >
-            <BasemapRenderer svgUrl={basemap.plattegrondSvgUrl} layers={[]} opacity={100} />
-          </div>
+          <BasemapRenderer
+            svgUrl={basemap.plattegrondSvgUrl}
+            layers={[]}
+            opacity={plattegrondLayer.opacity ?? 100}
+            scale={basemap.svgScale ?? 1}
+          />
         )}
 
         {/* Layer 2: Technisch plan (read-only SVG) */}
         {basemap && technischLayer?.visible && basemap.technischSvgUrl && (
-          <div
-            className="absolute top-0 left-0 pointer-events-none"
-            style={{ width: bboxW, height: bboxH, opacity: (technischLayer.opacity ?? 100) / 100 }}
-          >
-            <BasemapRenderer svgUrl={basemap.technischSvgUrl} layers={[]} opacity={100} />
-          </div>
+          <BasemapRenderer
+            svgUrl={basemap.technischSvgUrl}
+            layers={[]}
+            opacity={technischLayer.opacity ?? 100}
+            scale={basemap.svgScale ?? 1}
+          />
         )}
 
         {/* Layer 3: Standenplan (editable objects) */}
