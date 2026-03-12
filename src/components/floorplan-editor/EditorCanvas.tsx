@@ -6,7 +6,7 @@
  * All share the same camera transform.
  */
 
-import { useRef, useCallback, useState } from 'react';
+import { useRef, useCallback, useState, useEffect } from 'react';
 import { BasemapRenderer } from './BasemapRenderer';
 import { screenToWorld } from '@/lib/camera';
 import type { Camera, BBox, LayoutObject, LayoutStand, WorldPoint, EditorLayer } from '@/types/floorplan-editor';
@@ -68,6 +68,17 @@ export function EditorCanvas({
 }: EditorCanvasProps) {
   const [drawRect, setDrawRect] = useState<{ sx: number; sy: number; ex: number; ey: number } | null>(null);
   const [dragging, setDragging] = useState<{ id: string; startWorld: WorldPoint; origPolygon: WorldPoint[] } | null>(null);
+  const [altHeld, setAltHeld] = useState(false);
+  const [screenCursor, setScreenCursor] = useState<{ x: number; y: number } | null>(null);
+
+  // Track ALT key
+  useEffect(() => {
+    const down = (e: KeyboardEvent) => { if (e.key === 'Alt') setAltHeld(true); };
+    const up = (e: KeyboardEvent) => { if (e.key === 'Alt') setAltHeld(false); };
+    window.addEventListener('keydown', down);
+    window.addEventListener('keyup', up);
+    return () => { window.removeEventListener('keydown', down); window.removeEventListener('keyup', up); };
+  }, []);
 
   const snap = useCallback((v: number) => {
     if (!snapEnabled) return v;
@@ -87,6 +98,13 @@ export function EditorCanvas({
   const standenplanLayer = getLayer('standenplan');
 
   const handlePointerDown = useCallback((e: React.PointerEvent) => {
+    // DEV MODE: ALT+click logs world coordinates
+    if (e.altKey) {
+      const world = getWorld(e);
+      console.log(`📍 World coords: x=${world.x.toFixed(1)}m, y=${world.y.toFixed(1)}m`);
+      return;
+    }
+
     if (spacePressed || e.button === 1) {
       pointerHandlers.onPointerDown(e);
       return;
@@ -132,6 +150,12 @@ export function EditorCanvas({
   const handlePointerMove = useCallback((e: React.PointerEvent) => {
     const world = getWorld(e);
     onCursorMove(world);
+
+    // Track screen cursor for ALT tooltip
+    if (containerRef.current) {
+      const rect = containerRef.current.getBoundingClientRect();
+      setScreenCursor({ x: e.clientX - rect.left, y: e.clientY - rect.top });
+    }
 
     if (drawRect) {
       setDrawRect(prev => prev ? { ...prev, ex: snap(world.x), ey: snap(world.y) } : null);
@@ -347,6 +371,26 @@ export function EditorCanvas({
           >
             {activeHallZone}
           </span>
+        </div>
+      )}
+
+      {/* DEV: ALT-held coordinate tooltip */}
+      {altHeld && screenCursor && (
+        <div
+          className="absolute pointer-events-none select-none z-50"
+          style={{
+            left: screenCursor.x + 16,
+            top: screenCursor.y - 8,
+          }}
+        >
+          <div className="bg-foreground text-background text-xs font-mono px-2 py-1 rounded shadow-lg whitespace-nowrap">
+            {(() => {
+              if (!containerRef.current) return '…';
+              const rect = containerRef.current.getBoundingClientRect();
+              const w = screenToWorld({ x: screenCursor.x, y: screenCursor.y }, camera);
+              return `x: ${w.x.toFixed(1)}m  y: ${w.y.toFixed(1)}m`;
+            })()}
+          </div>
         </div>
       )}
     </div>
