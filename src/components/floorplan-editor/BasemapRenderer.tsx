@@ -1,6 +1,7 @@
 /**
- * BasemapRenderer – renders an SVG basemap with layer visibility support.
- * Wraps SVG in a group that can be toggled per layer.
+ * BasemapRenderer – fetches SVG text and injects it inline into the DOM.
+ * The SVG is rendered at its natural size (no stretching).
+ * Parent is responsible for scaling/positioning via CSS transforms.
  */
 
 import { useEffect, useRef, useState } from 'react';
@@ -10,50 +11,32 @@ interface BasemapRendererProps {
   svgUrl: string;
   layers: BasemapLayer[];
   opacity?: number;
+  /** Scale factor: 1 SVG unit × scale = 1 world unit (meter) */
+  scale?: number;
 }
 
-export function BasemapRenderer({ svgUrl, layers, opacity = 100 }: BasemapRendererProps) {
+export function BasemapRenderer({ svgUrl, layers, opacity = 100, scale = 1 }: BasemapRendererProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [svgContent, setSvgContent] = useState<string | null>(null);
-  const [naturalSize, setNaturalSize] = useState<{ width: number; height: number } | null>(null);
 
-  // Fetch and parse SVG
+  // Fetch SVG text
   useEffect(() => {
     if (!svgUrl) return;
+    let cancelled = false;
 
-    const fetchSvg = async () => {
-      try {
-        const res = await fetch(svgUrl);
-        const text = await res.text();
-        setSvgContent(text);
+    fetch(svgUrl)
+      .then(res => res.text())
+      .then(text => {
+        if (!cancelled) setSvgContent(text);
+      })
+      .catch(() => {
+        if (!cancelled) setSvgContent(null);
+      });
 
-        // Parse viewBox or dimensions
-        const parser = new DOMParser();
-        const doc = parser.parseFromString(text, 'image/svg+xml');
-        const svg = doc.querySelector('svg');
-        if (svg) {
-          const viewBox = svg.getAttribute('viewBox');
-          if (viewBox) {
-            const parts = viewBox.trim().split(/[\s,]+/).map(Number);
-            if (parts.length === 4) {
-              setNaturalSize({ width: parts[2], height: parts[3] });
-            }
-          } else {
-            const w = parseFloat(svg.getAttribute('width') || '0');
-            const h = parseFloat(svg.getAttribute('height') || '0');
-            if (w > 0 && h > 0) setNaturalSize({ width: w, height: h });
-          }
-        }
-      } catch {
-        // If SVG fetch fails, try as image
-        setSvgContent(null);
-      }
-    };
-
-    fetchSvg();
+    return () => { cancelled = true; };
   }, [svgUrl]);
 
-  // Apply layer visibility to inline SVG
+  // Inject SVG into DOM and apply layer visibility
   useEffect(() => {
     if (!containerRef.current || !svgContent) return;
 
@@ -62,9 +45,11 @@ export function BasemapRenderer({ svgUrl, layers, opacity = 100 }: BasemapRender
 
     const svg = container.querySelector('svg');
     if (svg) {
-      svg.style.width = '100%';
-      svg.style.height = '100%';
+      // Keep SVG at its natural/viewBox size – don't stretch
+      svg.removeAttribute('width');
+      svg.removeAttribute('height');
       svg.style.overflow = 'visible';
+      svg.style.display = 'block';
 
       // Apply layer visibility
       layers.forEach(layer => {
@@ -84,24 +69,20 @@ export function BasemapRenderer({ svgUrl, layers, opacity = 100 }: BasemapRender
     );
   }
 
-  // If we have inline SVG content, render it
-  if (svgContent) {
-    return (
-      <div
-        ref={containerRef}
-        className="absolute inset-0 pointer-events-none"
-        style={{ opacity: opacity / 100 }}
-      />
-    );
-  }
+  if (!svgContent) return null;
 
-  // Fallback: render as <img>
   return (
-    <img
-      src={svgUrl}
-      alt="Basemap"
-      className="absolute inset-0 w-full h-full object-contain pointer-events-none"
-      style={{ opacity: opacity / 100 }}
+    <div
+      ref={containerRef}
+      style={{
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        transformOrigin: '0 0',
+        transform: scale !== 1 ? `scale(${scale})` : undefined,
+        pointerEvents: 'none',
+        opacity: opacity / 100,
+      }}
     />
   );
 }
